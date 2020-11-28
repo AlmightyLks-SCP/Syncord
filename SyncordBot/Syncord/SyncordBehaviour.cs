@@ -4,29 +4,33 @@ using Newtonsoft.Json;
 using SyncordInfo;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncordBot.Syncord
 {
     internal class SyncordBehaviour
     {
-        private List<TcpClient> tcpClients;
+        private Dictionary<int, TcpClient> tcpClients;
+        private Dictionary<int, int> heartBeats;
         private TcpListener tcpListener;
         private DiscordClient dClient;
         internal SyncordBehaviour(DiscordClient client)
         {
             dClient = client;
-            tcpClients = new List<TcpClient>();
+            tcpClients = new Dictionary<int, TcpClient>();
             tcpListener = new TcpListener(IPAddress.Loopback, Bot.Configs.Port);
+            heartBeats = new Dictionary<int, int>();
         }
+
         internal async Task Start()
-            => await Task.Run(() => { _ = ListenForClient(); });
+        {
+            await Task.Run(() => { _ = ListenForClient(); });
+            await Task.Run(() => { _ = CheckHeartBeats(); });
+        }
 
         private async Task ListenForClient()
         {
@@ -49,25 +53,82 @@ namespace SyncordBot.Syncord
             try
             {
                 BinaryFormatter formatter = new BinaryFormatter();
-                for (; ; )
+
+                if (!acceptedClient.Connected)
                 {
-                    if (!acceptedClient.Connected)
-                    {
-                        Console.WriteLine($"Client not connected..");
-                        acceptedClient.Close();
-                        continue;
-                    }
-
-                    SharedInfo info = formatter.Deserialize(acceptedClient.GetStream()) as SharedInfo;
-                    await HandleData(info, acceptedClient);
-                }
-            }
-            catch (SerializationException e)
-            {
-                Console.WriteLine($"Deserialization failed, closing connection...\n{e}");
-
-                if (tcpClients.Remove(acceptedClient))
+                    Console.WriteLine($"Client not connected..");
                     acceptedClient.Close();
+                    return;
+                }
+
+                SharedInfo info = formatter.Deserialize(acceptedClient.GetStream()) as SharedInfo;
+                await HandleData(info, acceptedClient);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                if (tcpClients.Any((_) => _.Value == acceptedClient))
+                    acceptedClient.Close();
+            }
+        }
+        private async Task HandleData(SharedInfo info, TcpClient acceptedClient)
+        {
+            try
+            {
+                if (info is null)
+                {
+                    Console.WriteLine("Received invalid data");
+                    return;
+                }
+                int port = ((IPEndPoint)acceptedClient.Client.RemoteEndPoint).Port;
+
+                switch (info.Content)
+                {
+                    case "heartbeat":
+                        {
+                            if (heartBeats.ContainsKey(port))
+                                heartBeats[port]++;
+                            else
+                                heartBeats.Add(port, 0);
+                        }
+                        break;
+                    default:
+                        {
+                            tcpClients.Add(port, acceptedClient);
+
+                            var embed = JsonConvert.DeserializeObject<DiscordEmbed>(info.Content);
+
+                            var dedicatedGuild = Bot.Configs.Guilds.FirstOrDefault((_) => _.ServerPort == (port));
+
+                            if (dedicatedGuild is null)
+                            {
+                                Console.WriteLine($"No dedicated server found for Port {port}");
+                                return;
+                            }
+
+                            var guild = await dClient.GetGuildAsync(dedicatedGuild.GuildID);
+
+                            if (guild is null)
+                            {
+                                Console.WriteLine($"No Guild found for Guild ID {dedicatedGuild.GuildID}");
+                                return;
+                            }
+
+                            foreach (var dedicatedChannel in dedicatedGuild.DedicatedChannels.Where((_) => _.Key == embed.Title))
+                            {
+                                var channel = guild.GetChannel(dedicatedChannel.Value);
+
+                                if (channel is null)
+                                {
+                                    Console.WriteLine($"No Channel found for Channel ID {dedicatedChannel} | Guild {dedicatedGuild.GuildID}");
+                                    return;
+                                }
+
+                                await channel.SendMessageAsync(embed: embed);
+                            }
+                        }
+                        break;
+                }
             }
             catch (Exception e)
             {
@@ -75,22 +136,24 @@ namespace SyncordBot.Syncord
             }
         }
 
-        private async Task HandleData(SharedInfo info, TcpClient acceptedClient)
+        private async Task CheckHeartBeats()
         {
-            try
+            for (; ; )
             {
-                if (info is null)
+                foreach (var connection in tcpClients.ToArray())
                 {
-                    Console.WriteLine("Received data null");
-                    return;
-                }
+                    if (heartBeats[connection.Key] == 0)
+                    {
+                        heartBeats.Remove(connection.Key);
+                        tcpClients.Remove(connection.Key);
+                    }
+                    else
+                    {
+                        heartBeats[connection.Key]++;
+                    }
 
-                var embed = JsonConvert.DeserializeObject<DiscordEmbed>(info.Content);
-                await dClient.Guilds[727996170051518504].GetChannel(782245173526134814).SendMessageAsync(embed: embed);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
+                }
+                await Task.Delay(10000);
             }
         }
     }

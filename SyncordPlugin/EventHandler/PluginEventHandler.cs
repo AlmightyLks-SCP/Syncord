@@ -6,10 +6,10 @@ namespace SyncordPlugin.EventHandler
 {
     internal class PluginEventHandler
     {
-        private SyncordBehaviour syncord;
+        private SyncordBehaviour syncordBehav;
         public PluginEventHandler()
         {
-            syncord = new SyncordBehaviour();
+            syncordBehav = new SyncordBehaviour();
         }
         internal void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
         {
@@ -17,7 +17,10 @@ namespace SyncordPlugin.EventHandler
             {
                 var dEmbed = ev.ToDiscordEmbed();
                 var dEmbedJson = JsonConvert.SerializeObject(dEmbed);
-                SynapseController.Server.Logger.Info(syncord.SendData(dEmbedJson).ToString());
+                var status = syncordBehav.SendData(dEmbedJson);
+
+                if (SyncordPlugin.Config.LogStatus)
+                    SynapseController.Server.Logger.Info(status.ToString());
             }
             catch (System.Exception e)
             {
