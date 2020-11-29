@@ -1,6 +1,7 @@
 ﻿using Synapse.Api.Events.SynapseEventArguments;
 using SyncordPlugin.Syncord;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace SyncordPlugin.EventHandler
 {
@@ -11,6 +12,9 @@ namespace SyncordPlugin.EventHandler
         {
             syncordBehav = new SyncordBehaviour();
         }
+        internal void ListenForHeartbeats()
+            => _= Task.Run(() => _ = syncordBehav.ListenForHeartbeats());
+
         internal void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
         {
             try

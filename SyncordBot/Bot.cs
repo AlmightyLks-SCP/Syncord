@@ -12,7 +12,7 @@ namespace SyncordBot
     {
         internal static DiscordClient Client { get; private set; }
         public static Config Configs { get; set; }
-        private static SyncordBehaviour syncord { get; set; }
+        internal static SyncordBehaviour syncord { get; set; }
 
         static void Main()
             => MainAsync().GetAwaiter().GetResult();
@@ -34,7 +34,8 @@ namespace SyncordBot
 
             syncord = new SyncordBehaviour(discord);
 
-            _ = syncord.Start();
+            var hbTimer = syncord.Start();//.Result;
+            System.Console.WriteLine("Here");
 
             await Task.Delay(-1);
         }
