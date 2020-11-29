@@ -24,9 +24,6 @@ namespace SyncordPlugin
         {
             handler = new PluginEventHandler();
             handler.ListenForHeartbeats();
-
-            Synapse.Api.Events.EventHandler.Get.Player.PlayerDeathEvent += handler.OnPlayerDeathEvent;
-            Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += handler.OnPlayerJoinEvent;
         }
     }
 }

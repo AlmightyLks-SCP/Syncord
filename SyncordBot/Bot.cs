@@ -34,8 +34,7 @@ namespace SyncordBot
 
             syncord = new SyncordBehaviour(discord);
 
-            var hbTimer = syncord.Start();//.Result;
-            System.Console.WriteLine("Here");
+            _ = syncord.Start();
 
             await Task.Delay(-1);
         }

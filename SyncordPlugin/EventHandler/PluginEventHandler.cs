@@ -11,11 +11,31 @@ namespace SyncordPlugin.EventHandler
         public PluginEventHandler()
         {
             syncordBehav = new SyncordBehaviour();
-        }
-        internal void ListenForHeartbeats()
-            => _= Task.Run(() => _ = syncordBehav.ListenForHeartbeats());
 
+            Synapse.Api.Events.EventHandler.Get.Player.PlayerDeathEvent += OnPlayerDeathEvent;
+            Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
+            Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
+            Synapse.Api.Events.EventHandler.Get.Round.SpawnPlayersEvent += OnSpawnPlayersEvent;
+            Synapse.Api.Events.EventHandler.Get.Server.ConsoleCommandEvent += Server_ConsoleCommandEvent;
+            Synapse.Api.Events.EventHandler.Get.Server.RemoteAdminCommandEvent += Server_RemoteAdminCommandEvent; ;
+        }
+
+        private void Server_RemoteAdminCommandEvent(RemoteAdminCommandEventArgs ev)
+            => MakeAndSendEmbed(ev);
+
+        private void Server_ConsoleCommandEvent(ConsoleCommandEventArgs ev)
+            => MakeAndSendEmbed(ev);
+
+        private void OnPlayerLeaveEvent(PlayerLeaveEventArgs ev)
+            => MakeAndSendEmbed(ev);
+
+        private void OnSpawnPlayersEvent(SpawnPlayersEventArgs ev)
+            => MakeAndSendEmbed(ev);
         internal void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
+            => MakeAndSendEmbed(ev);
+        internal void OnPlayerJoinEvent(PlayerJoinEventArgs ev)
+            => MakeAndSendEmbed(ev);
+        private void MakeAndSendEmbed(Synapse.Api.Events.EventHandler.ISynapseEventArgs ev)
         {
             try
             {
@@ -33,10 +53,7 @@ namespace SyncordPlugin.EventHandler
                 SynapseController.Server.Logger.Info("--------------");
             }
         }
-
-        internal void OnPlayerJoinEvent(PlayerJoinEventArgs ev)
-        {
-
-        }
+        internal async void ListenForHeartbeats()
+            => await Task.Run(() => _ = syncordBehav.ListenForHeartbeats());
     }
 }

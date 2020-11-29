@@ -10,7 +10,6 @@ namespace SyncordPlugin.Syncord
     {
         Successful = 0,
         Unsuccessful = 1,
-        Error = 2,
-        UnknownType = 3
+        Error = 2
     }
 }
