@@ -6,21 +6,28 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncordPlugin.Syncord
 {
     internal class SyncordBehaviour
     {
+        private static SyncordBehaviour singleton;
+        internal bool ClientConnected => client is null ? false : client.Connected;
+        internal Task Heartbeating { get; private set; }
         private TcpClient client;
         private BinaryFormatter formatter;
         internal SyncordBehaviour()
         {
             formatter = new BinaryFormatter();
-            client = new TcpClient(new IPEndPoint(IPAddress.Loopback, Server.Get.Port));
+            client = new TcpClient();
+            singleton = this;
         }
 
-        internal async Task ListenForHeartbeats()
+        private void StartHeartbeating()
+            => Task.Run(() => Heartbeating = ListenForRequests());
+        internal async Task ListenForRequests()
         {
             for (; ; )
             {
@@ -33,73 +40,123 @@ namespace SyncordPlugin.Syncord
                     }
 
                     SynapseController.Server.Logger.Error($"Waiting for heartbeat...");
+
+                    //Wait for and serialize the incoming data
                     var info = formatter.Deserialize(client.GetStream()) as SharedInfo;
 
                     if (info is null)
                         continue;
 
-                    switch (info.Content)
+                    switch (info.RequestType)
                     {
-                        case "heartbeat":
-                            SynapseController.Server.Logger.Info($"Received hearbeat");
-                            var status = SendData(info.Content);
-                            SynapseController.Server.Logger.Info($"Sent hearbeat: {status}");
+                        case RequestType.Heartbeat:
+                            {
+                                //if it's a heartbeat, return the heartbeat to the Discord Bot
+                                SynapseController.Server.Logger.Info($"Received heartbeat");
+                                var status = SendData(info.Content, RequestType.Heartbeat);
+                                SynapseController.Server.Logger.Info($"Sent heartbeat: {status}");
+                                break;
+                            }
+                        case RequestType.Query:
+                            switch (info.Content)
+                            {
+                                case "Player Count":
+                                    SynapseController.Server.Logger.Info($"Bot Queried Player Count");
+                                    var status = SendData($"{Server.Get.Players.Count} / {CustomNetworkManager.slots}", RequestType.Response);
+                                    SynapseController.Server.Logger.Info($"Send Player Count: {status}");
+                                    break;
+                            }
                             break;
                     }
                 }
                 catch (IOException)
                 {
                     int port = ((IPEndPoint)client.Client.RemoteEndPoint).Port;
-                    Console.WriteLine($"Socket connection for {port} was closed unexpectedly.");
+                    SynapseController.Server.Logger.Error($"Socket connection for {port} was closed unexpectedly.");
+                    client.GetStream().Close();
                     client.Close();
-                    break;
                 }
                 catch (SocketException e)
                 {
                     int port = ((IPEndPoint)client.Client.RemoteEndPoint).Port;
                     SynapseController.Server.Logger.Error($"Socket connection for {port} was closed unexpectedly.\n{e}");
+                    client.GetStream().Close();
                     client.Close();
-                    break;
                 }
                 catch (SerializationException e)
                 {
                     int port = ((IPEndPoint)client.Client.RemoteEndPoint).Port;
                     SynapseController.Server.Logger.Error($"Could not serialize received data from {port}:\n{e}");
+                    client.GetStream().Close();
                     client.Close();
-                    break;
                 }
                 catch (Exception e)
                 {
-                    SynapseController.Server.Logger.Error($"Exception in listen:\n{e}");
+                    SynapseController.Server.Logger.Error($"eee - Exception in listen:\n{e}");
                 }
             }
         }
-        internal SendStatus SendData(string data, int attempt = 0)
-        {
-            if(attempt >= 3)
-            {
-                SynapseController.Server.Logger.Error($"Attempted reconnecting {attempt} times. Aborting.");
-                return SendStatus.Unsuccessful;
-            }
 
+        public static SendStatus ConnectClient()
+        {
             try
             {
-                if (!client.Connected)
-                    client.Connect(IPAddress.Loopback, SyncordPlugin.Config.DiscordBotPort);
+                //If the client, for whatever reason, disconnected - Reconnect.
+                if (!singleton.client.Connected)
+                {
+                    //Stop heartingbeating for old client
+                    singleton.Heartbeating?.Dispose();
 
-                formatter.Serialize(client.GetStream(), new SharedInfo { Content = data });
+                    //Reset client
+                    singleton.client = new TcpClient();
+
+                    SynapseController.Server.Logger.Warn($"Not connected, reconnecting.");
+
+                    singleton.client.Connect(IPAddress.Loopback, SyncordPlugin.Config.DiscordBotPort);
+
+                    singleton.StartHeartbeating();
+
+                    singleton.SendData("Connect", RequestType.Connect);
+                }
             }
-            catch (IOException e)
+            catch (IOException)
             {
-                Console.WriteLine($"Socket connection was closed unexpectedly.");
+                SynapseController.Server.Logger.Error($"Socket connection was closed unexpectedly.");
                 return SendStatus.Unsuccessful;
             }
-            catch (SocketException e)
+            catch (SocketException)
             {
-                SynapseController.Server.Logger.Error($"Attempted reconnecting on an already existing socket connection. Attempting reconnection...");
-                client.Close();
-                client = new TcpClient(new IPEndPoint(IPAddress.Loopback, Server.Get.Port));
-                SendData(data, ++attempt);
+                SynapseController.Server.Logger.Error($"Target machine was not listening on port {SyncordPlugin.Config.DiscordBotPort}...");
+
+                //Disconnect client
+                if (singleton.client.Client.Connected)
+                    singleton.client.Client.Disconnect(false);
+                return SendStatus.Error;
+            }
+            catch (Exception e)
+            {
+                SynapseController.Server.Logger.Error($"Exception in SendData:\n{e}");
+                return SendStatus.Error;
+            }
+
+            return SendStatus.Successful;
+        }
+        internal SendStatus SendData(string data, RequestType reqType = RequestType.Event)
+        {
+            try
+            {
+                //If the client, for whatever reason, disconnected - Reconnect.
+                if (!client.Connected)
+                    ConnectClient();
+
+                //Prepare data to send
+                var info = new SharedInfo() { Port = Server.Get.Port, Content = data };
+
+                //If it's a heartbeat, make RequestType heartbeat.
+
+                info.RequestType = reqType;
+
+                formatter.Serialize(client.GetStream(), info);
             }
             catch (Exception e)
             {

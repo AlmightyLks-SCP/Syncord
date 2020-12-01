@@ -2,58 +2,82 @@
 using SyncordPlugin.Syncord;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using static Synapse.Api.Events.EventHandler;
+using System;
+using System.Collections.Generic;
 
 namespace SyncordPlugin.EventHandler
 {
     internal class PluginEventHandler
     {
-        private SyncordBehaviour syncordBehav;
+        internal SyncordBehaviour SyncordBehaviour { get; set; }
+        private SpamQueue SpamQueue;
         public PluginEventHandler()
         {
-            syncordBehav = new SyncordBehaviour();
+            SyncordBehaviour = new SyncordBehaviour();
+            SpamQueue = new SpamQueue();
 
-            Synapse.Api.Events.EventHandler.Get.Player.PlayerDeathEvent += OnPlayerDeathEvent;
-            Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
-            Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
-            Synapse.Api.Events.EventHandler.Get.Round.SpawnPlayersEvent += OnSpawnPlayersEvent;
-            Synapse.Api.Events.EventHandler.Get.Server.ConsoleCommandEvent += Server_ConsoleCommandEvent;
-            Synapse.Api.Events.EventHandler.Get.Server.RemoteAdminCommandEvent += Server_RemoteAdminCommandEvent; ;
+            Get.Player.PlayerDeathEvent += OnPlayerDeathEvent;
+            Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
+            Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
+            Get.Round.SpawnPlayersEvent += OnSpawnPlayersEvent;
+            Get.Server.ConsoleCommandEvent += OnConsoleCommandEvent;
+            Get.Server.RemoteAdminCommandEvent += OnRemoteAdminCommandEvent;
+            Get.Player.PlayerBanEvent += OnPlayerBanEvent;
         }
 
-        private void Server_RemoteAdminCommandEvent(RemoteAdminCommandEventArgs ev)
+        private void OnPlayerBanEvent(PlayerBanEventArgs ev)
             => MakeAndSendEmbed(ev);
-
-        private void Server_ConsoleCommandEvent(ConsoleCommandEventArgs ev)
+        private void OnRemoteAdminCommandEvent(RemoteAdminCommandEventArgs ev)
             => MakeAndSendEmbed(ev);
-
+        private void OnConsoleCommandEvent(ConsoleCommandEventArgs ev)
+            => MakeAndSendEmbed(ev);
         private void OnPlayerLeaveEvent(PlayerLeaveEventArgs ev)
             => MakeAndSendEmbed(ev);
-
         private void OnSpawnPlayersEvent(SpawnPlayersEventArgs ev)
             => MakeAndSendEmbed(ev);
         internal void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
             => MakeAndSendEmbed(ev);
         internal void OnPlayerJoinEvent(PlayerJoinEventArgs ev)
             => MakeAndSendEmbed(ev);
-        private void MakeAndSendEmbed(Synapse.Api.Events.EventHandler.ISynapseEventArgs ev)
+
+        private void MakeAndSendEmbed(ISynapseEventArgs ev)
         {
             try
             {
-                var dEmbed = ev.ToDiscordEmbed();
-                var dEmbedJson = JsonConvert.SerializeObject(dEmbed);
-                var status = syncordBehav.SendData(dEmbedJson);
+                if (!SyncordBehaviour.ClientConnected)
+                    return;
+                //if (ev is PlayerLeaveEventArgs playerLeave)
+                //{
+                //    SpamQueue.AddToQueue(playerLeave);
+                //}
+                //else if (ev is PlayerJoinEventArgs playerJoin)
+                //{
+                //    SpamQueue.AddToQueue(playerJoin);
+                //}
 
-                if (SyncordPlugin.Config.LogStatus)
-                    SynapseController.Server.Logger.Info(status.ToString());
+                //Create Embed
+                var dEmbed = ev.ToDiscordEmbedBuilder();
+
+                if (dEmbed is null)
+                    return;
+
+                //Serialize to Json
+                var dEmbedJson = JsonConvert.SerializeObject(dEmbed.Build());
+
+                //Send to Discord Bot if client is not off
+                var status = SyncordBehaviour.SendData(dEmbedJson);
+
+                SynapseController.Server.Logger.Info(status.ToString());
             }
-            catch (System.Exception e)
+            catch (InvalidOperationException)
             {
-                SynapseController.Server.Logger.Info("--------------");
-                SynapseController.Server.Logger.Error(e.ToString());
-                SynapseController.Server.Logger.Info("--------------");
+                SynapseController.Server.Logger.Error($"Stream to write into was aborted");
+            }
+            catch (Exception e)
+            {
+                SynapseController.Server.Logger.Error($"Exception in MakeAndSendEmbed:\n{e}");
             }
         }
-        internal async void ListenForHeartbeats()
-            => await Task.Run(() => _ = syncordBehav.ListenForHeartbeats());
     }
 }

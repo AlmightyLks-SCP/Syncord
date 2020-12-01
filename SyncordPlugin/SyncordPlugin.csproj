@@ -81,12 +81,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Command\Reconnect.cs" />
     <Compile Include="EventHandler\PluginEventHandler.cs" />
     <Compile Include="Config\SyncordConfig.cs" />
     <Compile Include="SyncordPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Syncord\Helper.cs" />
     <Compile Include="Syncord\SendStatus.cs" />
+    <Compile Include="Syncord\SpamQueue.cs" />
     <Compile Include="Syncord\SyncordBehaviour.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -99,5 +101,6 @@
       <Name>SyncordInfo</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

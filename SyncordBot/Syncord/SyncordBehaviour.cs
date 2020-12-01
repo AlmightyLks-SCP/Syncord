@@ -1,6 +1,7 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
 using Newtonsoft.Json;
+using SyncordBot.Logging;
 using SyncordInfo;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,8 @@ namespace SyncordBot.Syncord
         private TcpListener tcpListener;
         private DiscordClient dClient;
         private BinaryFormatter binaryFormatter;
-        internal SyncordBehaviour(DiscordClient client)
+        private ILogger logger;
+        internal SyncordBehaviour(DiscordClient client, ILogger logger)
         {
             dClient = client;
             clientConnections = new Dictionary<int, TcpClient>();
@@ -30,31 +32,35 @@ namespace SyncordBot.Syncord
             heartbeats = new Dictionary<int, int>();
             binaryFormatter = new BinaryFormatter();
             heartbeatTimer = new System.Timers.Timer();
+            this.logger = logger;
         }
 
         internal async Task Start()
         {
-            Console.WriteLine("In here");
             _ = Task.Run(() => { _ = ListenForClient(); });
-            heartbeatTimer.Interval = 5000;
+
+            heartbeatTimer.Interval = 15_000;
             heartbeatTimer.AutoReset = true;
             heartbeatTimer.Elapsed += HeartbeatTimer_Elapsed;
             heartbeatTimer.Start();
         }
-
         private async Task ListenForClient()
         {
             for (; ; )
             {
                 try
                 {
+                    logger.Info("I am listening for connections on " +
+                                         IPAddress.Parse(((IPEndPoint)tcpListener.LocalEndpoint).Address.ToString()) +
+                                          " on port " + ((IPEndPoint)tcpListener.LocalEndpoint).Port.ToString());
                     tcpListener.Start();
                     TcpClient acceptedClient = tcpListener.AcceptTcpClient();
                     Task.Run(() => { _ = AcceptData(acceptedClient); });
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Exception in listen:\n{e}");
+                    logger.Error($"Exception in ListenForClient:\n{e}");
+                    logger.Exception($"Exception in ListenForClient:\n{e}");
                 }
             }
         }
@@ -66,7 +72,7 @@ namespace SyncordBot.Syncord
                 {
                     if (!acceptedClient.Connected)
                     {
-                        Console.WriteLine($"Client not connected..");
+                        logger.Warn($"Client not connected..");
                         return;
                     }
 
@@ -76,23 +82,44 @@ namespace SyncordBot.Syncord
                 catch (IOException e)
                 {
                     int port = ((IPEndPoint)acceptedClient.Client.RemoteEndPoint).Port;
-                    Console.WriteLine($"Socket connection for {port} was closed unexpectedly.");
-                    clientConnections.Remove(port);
-                    heartbeats.Remove(port);
+                    logger.Error($"Socket connection for {port} was closed unexpectedly.");
+                    logger.Exception($"Socket connection for {port} was closed unexpectedly.\n{e}");
+
+                    //Find connection
+                    var con = clientConnections.First((_) => _.Value == acceptedClient);
+
+                    //Remove client from storage
+                    clientConnections.Remove(con.Key);
+                    heartbeats.Remove(con.Key);
+
+                    //End connections.
+                    acceptedClient.GetStream().Close();
+                    acceptedClient.Close();
                     break;
                 }
                 catch (SerializationException e)
                 {
                     int port = ((IPEndPoint)acceptedClient.Client.RemoteEndPoint).Port;
-                    Console.WriteLine($"Could not serialize received data from {port}.");
-                    clientConnections.Remove(port);
-                    heartbeats.Remove(port);
+                    logger.Error($"Could not serialize received data from {port}.");
+                    logger.Exception($"Could not serialize received data from {port}.\n{e}");
+
+                    //Find client
+                    var con = clientConnections.First((_) => _.Value == acceptedClient);
+
+                    //Remove from storage
+                    clientConnections.Remove(con.Key);
+                    heartbeats.Remove(con.Key);
+
+                    //End connections.
+                    acceptedClient.GetStream().Close();
+                    acceptedClient.Close();
                     break;
                 }
                 catch (Exception e)
                 {
                     int port = ((IPEndPoint)acceptedClient.Client.RemoteEndPoint).Port;
-                    Console.WriteLine($"Exception on tcp for port {port}:\n{e}");
+                    logger.Error($"Exception on client for port {port}:\n{e}");
+                    logger.Exception($"Exception on client for port {port}:\n{e}");
                     break;
                 }
             }
@@ -103,59 +130,32 @@ namespace SyncordBot.Syncord
             {
                 if (info is null)
                 {
-                    Console.WriteLine("Received invalid data");
+                    logger.Error("Received invalid data");
+                    logger.Exception("Received invalid data");
                     return;
                 }
-                int senderPort = ((IPEndPoint)acceptedClient.Client.RemoteEndPoint).Port;
 
-                switch (info.Content)
+                switch (info.RequestType)
                 {
-                    case "heartbeat":
+                    case RequestType.Heartbeat:
                         {
-                            if (heartbeats.ContainsKey(senderPort))
-                                heartbeats[senderPort]++;
+                            if (heartbeats.ContainsKey(info.Port))
+                                heartbeats[info.Port]++;
                             else
-                                heartbeats.Add(senderPort, 1);
+                                heartbeats.Add(info.Port, 1);
                         }
                         break;
-                    default:
+                    case RequestType.Event:
+                        {
+                            LogEventInfo(info);
+                        }
+                        break;
+                    case RequestType.Connect:
                         {
                             if (!clientConnections.Any((_) => _.Value == acceptedClient))
                             {
-                                clientConnections.Add(senderPort, acceptedClient);
-                                heartbeats.Add(senderPort, 1);
-                            }
-
-                            var embed = JsonConvert.DeserializeObject<DiscordEmbed>(info.Content);
-
-                            foreach (var dedicatedGuild in Bot.Configs.Guilds.Where((_) => _.ServerPort == (senderPort)))
-                            {
-                                if (dedicatedGuild is null)
-                                {
-                                    Console.WriteLine($"No dedicated server found for Port {senderPort}");
-                                    return;
-                                }
-
-                                var guild = await dClient.GetGuildAsync(dedicatedGuild.GuildID);
-
-                                if (guild is null)
-                                {
-                                    Console.WriteLine($"No Guild found for Guild ID {dedicatedGuild.GuildID}");
-                                    return;
-                                }
-
-                                foreach (var dedicatedChannel in dedicatedGuild.DedicatedChannels.Where((_) => _.Key == embed.Title))
-                                {
-                                    var channel = guild.GetChannel(dedicatedChannel.Value);
-
-                                    if (channel is null)
-                                    {
-                                        Console.WriteLine($"No Channel found for Channel ID {dedicatedChannel} | Guild {dedicatedGuild.GuildID}");
-                                        return;
-                                    }
-
-                                    await channel.SendMessageAsync(embed: embed);
-                                }
+                                clientConnections.Add(info.Port, acceptedClient);
+                                heartbeats.Add(info.Port, 1);
                             }
                         }
                         break;
@@ -163,31 +163,13 @@ namespace SyncordBot.Syncord
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Exception in Handle data:\n{e}");
+                logger.Error($"Exception in Handle data:\n{e}");
+                logger.Exception($"Exception in Handle data:\n{e}");
             }
         }
 
         private async void HeartbeatTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            await CheckHeartbeats();
-        }
-        private async Task SendHeartbeats()
-        {
-            try
-            {
-                foreach (var connection in clientConnections.ToArray())
-                {
-                    if (!connection.Value.Connected)
-                        continue;
-                    binaryFormatter.Serialize(connection.Value.GetStream(), new SharedInfo() { Content = "heartbeat" });
-                    Console.WriteLine($"Sent {((IPEndPoint)(connection.Value.Client.RemoteEndPoint)).Port} heartbeat");
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Error sending Heartbeats:\n{e}");
-            }
-        }
+            => await CheckHeartbeats();
         private async Task CheckHeartbeats()
         {
             try
@@ -197,11 +179,15 @@ namespace SyncordBot.Syncord
                     if (!heartbeats.TryGetValue(connection.Key, out int val))
                         return;
 
-                    if (val == 0)
+                    if (val == 0) //If no hearbeats have been returned
                     {
-                        Console.WriteLine($"No hearbeats received from port {connection.Key}. Connection closed.");
+                        logger.Warn($"No hearbeats received from port {connection.Key}. Connection closed.");
+
+                        //Remove from storage
                         heartbeats.Remove(connection.Key);
                         clientConnections.Remove(connection.Key);
+
+                        //Close connection
                         connection.Value.Client.Close();
                     }
                 }
@@ -209,11 +195,74 @@ namespace SyncordBot.Syncord
                 foreach (var _ in heartbeats.ToList())
                     heartbeats[_.Key] = 0;
 
+                UpdateBotActivity();
                 await SendHeartbeats();
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Exception in Check Heartbeats:\n{e}");
+                logger.Error($"Exception in Check Heartbeats:\n{e}");
+                logger.Exception($"Exception in Check Heartbeats:\n{e}");
+            }
+        }
+
+        private async Task UpdateBotActivity()
+        {
+            var game = new DiscordGame($"on {clientConnections.Count} SCP SL Servers");
+
+            await dClient.UpdateStatusAsync(game, UserStatus.DoNotDisturb);
+        }
+
+        private async Task SendHeartbeats()
+        {
+            try
+            {
+                foreach (var connection in clientConnections.ToArray())
+                {
+                    if (!connection.Value.Connected)
+                        continue;
+                    binaryFormatter.Serialize(connection.Value.GetStream(), new SharedInfo() { RequestType = RequestType.Heartbeat, Content = "Heartbeat" });
+                    logger.Info($"Sent {((IPEndPoint)(connection.Value.Client.RemoteEndPoint)).Port} heartbeat");
+                }
+            }
+            catch (Exception e)
+            {
+                logger.Error($"Error sending Heartbeats:\n{e}");
+                logger.Exception($"Error sending Heartbeats:\n{e}");
+            }
+        }
+
+        private async void LogEventInfo(SharedInfo info)
+        {
+            var embed = JsonConvert.DeserializeObject<DiscordEmbed>(info.Content);
+
+            foreach (var dedicatedGuild in Bot.Configs.Guilds.Where((_) => _.ServerPort == (info.Port)))
+            {
+                if (dedicatedGuild is null)
+                {
+                    logger.Warn($"No dedicated server found for Port {info.Port}");
+                    continue;
+                }
+
+                var guild = await dClient.GetGuildAsync(dedicatedGuild.GuildID);
+
+                if (guild is null)
+                {
+                    logger.Warn($"No Guild found for Guild ID {dedicatedGuild.GuildID}");
+                    continue;
+                }
+
+                foreach (var dedicatedChannel in dedicatedGuild.DedicatedChannels.Where((_) => _.Key == embed.Title))
+                {
+                    var channel = guild.GetChannel(dedicatedChannel.Value);
+
+                    if (channel is null)
+                    {
+                        logger.Warn($"No Channel found for Channel ID {dedicatedChannel} | Guild {dedicatedGuild.GuildID}");
+                        continue;
+                    }
+
+                    await channel.SendMessageAsync(embed: embed);
+                }
             }
         }
     }
