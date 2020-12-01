@@ -166,7 +166,8 @@ namespace SyncordPlugin.Syncord
 
             embedBuilder.AddField($"{ev.Issuer.NickName} ({ev.Issuer.UserId})", 
                 $"Banned: {ev.BannedPlayer.NickName}\n{ev.BannedPlayer.UserId}\nReason: {ev.Reason}\n" +
-                $"Duration: {ev.Duration} Minutes | {ev.Duration / 60} Hours | {ev.Duration / 60 / 24} Days | {ev.Duration / 60 / 24 / 365} Years", true);
+                $"Duration: {ev.Duration / 60} Minutes | {ev.Duration / 60 / 60} Hours | {ev.Duration / 60 / 60 / 24} Days | {ev.Duration / 60 / 60 / 24 / 365} Years",
+                true);
 
             embedBuilder.WithFooter($"Server: {Server.Get.Port}");
             embedBuilder.Timestamp = DateTime.UtcNow;

@@ -37,7 +37,7 @@ namespace SyncordBot.Syncord
 
         internal async Task Start()
         {
-            _ = Task.Run(() => { _ = ListenForClient(); });
+            Task.Run(() => _ = ListenForClient());
 
             heartbeatTimer.Interval = 15_000;
             heartbeatTimer.AutoReset = true;
@@ -50,11 +50,11 @@ namespace SyncordBot.Syncord
             {
                 try
                 {
-                    logger.Info("I am listening for connections on " +
-                                         IPAddress.Parse(((IPEndPoint)tcpListener.LocalEndpoint).Address.ToString()) +
-                                          " on port " + ((IPEndPoint)tcpListener.LocalEndpoint).Port.ToString());
+                    logger.Info($"Bot is listening for connections on {IPAddress.Parse(((IPEndPoint)tcpListener.LocalEndpoint).Address.ToString())} on port {((IPEndPoint)tcpListener.LocalEndpoint).Port}");
+                    
                     tcpListener.Start();
                     TcpClient acceptedClient = tcpListener.AcceptTcpClient();
+                    
                     Task.Run(() => { _ = AcceptData(acceptedClient); });
                 }
                 catch (Exception e)
