@@ -107,7 +107,8 @@ namespace SyncordPlugin.Syncord
 
             embedBuilder.Title = "Round Start Spawn";
             embedBuilder.Color = DiscordColor.Blue;
-            var roleIds = ev.SpawnPlayers.Values.Distinct();
+
+            var roleIds = SynapseController.Server.Players.Select((_) => _.RoleID).Distinct();
 
             foreach (var roleid in roleIds)
             {
@@ -118,7 +119,7 @@ namespace SyncordPlugin.Syncord
                 else
                     roleName = ((RoleType)roleid).ToString();
 
-                embedBuilder.AddField(roleName, $"Amount: {ev.SpawnPlayers.Values.Where((_) => _ == roleid).Count()}", true);
+                embedBuilder.AddField(roleName, $"Amount: {SynapseController.Server.Players.Where((_) => _.RoleID == roleid).Count()}", true);
             }
 
             embedBuilder.WithFooter($"Server: {Server.Get.Port}");
@@ -128,11 +129,11 @@ namespace SyncordPlugin.Syncord
         }
         private static DiscordEmbedBuilder ToEmbedBuilder(this ConsoleCommandEventArgs ev)
         {
-            if (ev.Command.ToLower().StartsWith(".key")) 
+            if (ev.Command.ToLower().StartsWith(".key"))
                 return null;
-            
+
             var embedBuilder = new DiscordEmbedBuilder();
-            
+
             embedBuilder.Title = "Console Command";
             embedBuilder.Color = DiscordColor.Blue;
 
@@ -164,7 +165,7 @@ namespace SyncordPlugin.Syncord
             embedBuilder.Title = "Player Ban";
             embedBuilder.Color = DiscordColor.DarkRed;
 
-            embedBuilder.AddField($"{ev.Issuer.NickName} ({ev.Issuer.UserId})", 
+            embedBuilder.AddField($"{ev.Issuer.NickName} ({ev.Issuer.UserId})",
                 $"Banned: {ev.BannedPlayer.NickName}\n{ev.BannedPlayer.UserId}\nReason: {ev.Reason}\n" +
                 $"Duration: {ev.Duration / 60} Minutes | {ev.Duration / 60 / 60} Hours | {ev.Duration / 60 / 60 / 24} Days | {ev.Duration / 60 / 60 / 24 / 365} Years",
                 true);

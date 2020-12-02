@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using static Synapse.Api.Events.EventHandler;
 using System;
 using System.Collections.Generic;
+using MEC;
 
 namespace SyncordPlugin.EventHandler
 {
@@ -35,18 +36,19 @@ namespace SyncordPlugin.EventHandler
         private void OnPlayerLeaveEvent(PlayerLeaveEventArgs ev)
             => MakeAndSendEmbed(ev);
         private void OnSpawnPlayersEvent(SpawnPlayersEventArgs ev)
-            => MakeAndSendEmbed(ev);
+            => Timing.CallDelayed(1f, () => MakeAndSendEmbed(ev));
         internal void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
             => MakeAndSendEmbed(ev);
         internal void OnPlayerJoinEvent(PlayerJoinEventArgs ev)
             => MakeAndSendEmbed(ev);
 
-        private void MakeAndSendEmbed(ISynapseEventArgs ev)
+        private async void MakeAndSendEmbed(ISynapseEventArgs ev)
         {
             try
             {
                 if (!SyncordBehaviour.ClientConnected)
                     return;
+
                 //if (ev is PlayerLeaveEventArgs playerLeave)
                 //{
                 //    SpamQueue.AddToQueue(playerLeave);
