@@ -56,7 +56,7 @@ Regarding the `Guilds`... The way a Guild-entry is structured is as following:
     }
 }
 ```
-The valid Event Names can be found [here](). I am always open for suggestions!
+The valid Event Names can be found [here](https://github.com/AlmightyLks/Syncord/blob/main/EventNames.md). I am always open for suggestions!
 
 
 Which could look something like this in completion:
