@@ -39,7 +39,7 @@ namespace SyncordPlugin.Syncord
                         continue;
                     }
 
-                    SynapseController.Server.Logger.Error($"Waiting for Requests...");
+                    SynapseController.Server.Logger.Info($"Waiting for Requests...");
 
                     //Wait for and deserialize the incoming data
                     var info = formatter.Deserialize(client.GetStream()) as SharedInfo;
@@ -58,15 +58,17 @@ namespace SyncordPlugin.Syncord
                                 break;
                             }
                         case RequestType.Query:
-                            switch (info.Content)
                             {
-                                case "Player Count":
-                                    SynapseController.Server.Logger.Info($"Bot Queried Player Count");
-                                    var status = SendData($"{Server.Get.Players.Count} / {CustomNetworkManager.slots}", RequestType.Response);
-                                    SynapseController.Server.Logger.Info($"Send Player Count: {status}");
-                                    break;
+                                switch (info.Content)
+                                {
+                                    case "Player Count":
+                                        SynapseController.Server.Logger.Info($"Bot Queried Player Count");
+                                        var status = SendData($"{Server.Get.Players.Count} / {CustomNetworkManager.slots}", RequestType.Response);
+                                        SynapseController.Server.Logger.Info($"Send Player Count: {status}");
+                                        break;
+                                }
+                                break;
                             }
-                            break;
                     }
                 }
                 catch (IOException)
