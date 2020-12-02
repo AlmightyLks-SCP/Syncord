@@ -2,12 +2,11 @@
 
 ## Description
 
-Syncord is there to offer you a way of logging events from within your SCP SL Server to your Discord Server.  
+Syncord is there to offer you a way of logging specific Events from within your SCP SL Server to your Discord Server.  
 To make it short, Syncord supports:  
 - Logging Events from multiple SL-Servers to one Discord-Server.
 - Logging Events from one SL-Server to multiple Discord-Servers.
 - Logging multiple Events into the same channel.
-- Logging 
 
 What Syncord doesn't support (yet):
 - Logging SL-Server Events from a remote machine. (Bot & Server/s have to be on the same machine.)
