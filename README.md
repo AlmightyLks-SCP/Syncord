@@ -119,8 +119,17 @@ discordBotPort: 8000
 
 ## How to Install
 
+Download the files from the [Latest Release](https://github.com/AlmightyLks/Syncord/releases).  
+The Bot only has to be unpacked and stay within its own folder (For your own good, and to make sure of the file integrity).  
+It doesn't matter where you put the Bot-Folder, it only has to be on the same system.  
+
+For the Server-sided things... You move the `SyncordInfo.dll`, `DSharpPlus.dll` & the `Newtonsoft.Json.dll`, which are uploaded, into your Synapse\dependencies folder.  
+After that, you simply move the `SyncordPlugin.dll` into your Server. Done!
 
 
+---
 
+## How to use
 
-
+Using the `syncord.reconnect` permission and either the `Remote Admin Console` or the `Server Console`, you type `syncord connect` in order to connect to the local Syncord Bot.  
+After that, you do not have to worry and you can leave the work to the Plugin and the Bot!
