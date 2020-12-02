@@ -115,7 +115,9 @@ discordBotPort: 8000
 ```
 
 
+---
 
+## How to Install
 
 
 
