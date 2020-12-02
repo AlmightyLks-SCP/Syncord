@@ -21,7 +21,7 @@ namespace SyncordPlugin.Command
 
             if (!context.Player.HasPermission("syncord.reconnect"))
             {
-                result.Message = "You dont have Permission to execute this Command (syncord.reconnect)";
+                result.Message = "You don't have Permission to execute this Command (syncord.reconnect)";
                 result.State = CommandResultState.NoPermission;
                 return result;
             }

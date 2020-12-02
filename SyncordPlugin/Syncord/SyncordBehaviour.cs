@@ -39,9 +39,9 @@ namespace SyncordPlugin.Syncord
                         continue;
                     }
 
-                    SynapseController.Server.Logger.Error($"Waiting for heartbeat...");
+                    SynapseController.Server.Logger.Error($"Waiting for Requests...");
 
-                    //Wait for and serialize the incoming data
+                    //Wait for and deserialize the incoming data
                     var info = formatter.Deserialize(client.GetStream()) as SharedInfo;
 
                     if (info is null)
@@ -97,7 +97,7 @@ namespace SyncordPlugin.Syncord
             }
         }
 
-        public static SendStatus ConnectClient()
+        internal static SendStatus ConnectClient()
         {
             try
             {
@@ -145,17 +145,14 @@ namespace SyncordPlugin.Syncord
         {
             try
             {
-                //If the client, for whatever reason, disconnected - Reconnect.
-                if (!client.Connected)
+                //If the client, for whatever reason, disconnected - Attempt reconnecting.
+                if (!ClientConnected)
                     ConnectClient();
 
                 //Prepare data to send
-                var info = new SharedInfo() { Port = Server.Get.Port, Content = data };
+                var info = new SharedInfo() { Port = Server.Get.Port, RequestType = reqType, Content = data };
 
-                //If it's a heartbeat, make RequestType heartbeat.
-
-                info.RequestType = reqType;
-
+                //Serialize Data into stream.
                 formatter.Serialize(client.GetStream(), info);
             }
             catch (Exception e)

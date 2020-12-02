@@ -44,6 +44,7 @@ namespace SyncordBot.Syncord
             heartbeatTimer.Elapsed += HeartbeatTimer_Elapsed;
             heartbeatTimer.Start();
         }
+
         private async Task ListenForClient()
         {
             for (; ; )
@@ -51,10 +52,12 @@ namespace SyncordBot.Syncord
                 try
                 {
                     logger.Info($"Bot is listening for connections on {IPAddress.Parse(((IPEndPoint)tcpListener.LocalEndpoint).Address.ToString())} on port {((IPEndPoint)tcpListener.LocalEndpoint).Port}");
-                    
+
+                    //Listen for clients
                     tcpListener.Start();
                     TcpClient acceptedClient = tcpListener.AcceptTcpClient();
-                    
+
+                    //Handle each client individually.
                     Task.Run(() => { _ = AcceptData(acceptedClient); });
                 }
                 catch (Exception e)
@@ -76,6 +79,7 @@ namespace SyncordBot.Syncord
                         return;
                     }
 
+                    //Accept SharedInfo data from the client.
                     SharedInfo info = binaryFormatter.Deserialize(acceptedClient.GetStream()) as SharedInfo;
                     HandleData(info, acceptedClient);
                 }
@@ -204,14 +208,6 @@ namespace SyncordBot.Syncord
                 logger.Exception($"Exception in Check Heartbeats:\n{e}");
             }
         }
-
-        private async Task UpdateBotActivity()
-        {
-            var game = new DiscordGame($"on {clientConnections.Count} SCP SL Servers");
-
-            await dClient.UpdateStatusAsync(game, UserStatus.DoNotDisturb);
-        }
-
         private async Task SendHeartbeats()
         {
             try
@@ -220,7 +216,9 @@ namespace SyncordBot.Syncord
                 {
                     if (!connection.Value.Connected)
                         continue;
-                    binaryFormatter.Serialize(connection.Value.GetStream(), new SharedInfo() { RequestType = RequestType.Heartbeat, Content = "Heartbeat" });
+
+                    //Send out Heartbeats to every client
+                    binaryFormatter.Serialize(connection.Value.GetStream(), new SharedInfo() { Port = Bot.Configs.Port, RequestType = RequestType.Heartbeat, Content = "Heartbeat" });
                     logger.Info($"Sent {((IPEndPoint)(connection.Value.Client.RemoteEndPoint)).Port} heartbeat");
                 }
             }
@@ -231,38 +229,53 @@ namespace SyncordBot.Syncord
             }
         }
 
+        private async Task UpdateBotActivity()
+        {
+            var game = new DiscordGame($"on {clientConnections.Count} SCP SL Servers");
+
+            await dClient.UpdateStatusAsync(game, UserStatus.DoNotDisturb);
+        }
         private async void LogEventInfo(SharedInfo info)
         {
-            var embed = JsonConvert.DeserializeObject<DiscordEmbed>(info.Content);
-
-            foreach (var dedicatedGuild in Bot.Configs.Guilds.Where((_) => _.ServerPort == (info.Port)))
+            try
             {
-                if (dedicatedGuild is null)
+
+                var embed = JsonConvert.DeserializeObject<DiscordEmbed>(info.Content);
+
+                foreach (var dedicatedGuild in Bot.Configs.Guilds.Where((_) => _.ServerPort == (info.Port)))
                 {
-                    logger.Warn($"No dedicated server found for Port {info.Port}");
-                    continue;
-                }
-
-                var guild = await dClient.GetGuildAsync(dedicatedGuild.GuildID);
-
-                if (guild is null)
-                {
-                    logger.Warn($"No Guild found for Guild ID {dedicatedGuild.GuildID}");
-                    continue;
-                }
-
-                foreach (var dedicatedChannel in dedicatedGuild.DedicatedChannels.Where((_) => _.Key == embed.Title))
-                {
-                    var channel = guild.GetChannel(dedicatedChannel.Value);
-
-                    if (channel is null)
+                    if (dedicatedGuild is null)
                     {
-                        logger.Warn($"No Channel found for Channel ID {dedicatedChannel} | Guild {dedicatedGuild.GuildID}");
+                        logger.Warn($"No dedicated server found for Port {info.Port}");
                         continue;
                     }
 
-                    await channel.SendMessageAsync(embed: embed);
+                    var guild = await dClient.GetGuildAsync(dedicatedGuild.GuildID);
+
+                    if (guild is null)
+                    {
+                        logger.Warn($"No Guild found for Guild ID {dedicatedGuild.GuildID}");
+                        continue;
+                    }
+
+                    foreach (var dedicatedChannel in dedicatedGuild.DedicatedChannels.Where((_) => _.Key == embed.Title))
+                    {
+                        var channel = guild.GetChannel(dedicatedChannel.Value);
+
+                        if (channel is null)
+                        {
+                            logger.Warn($"No Channel found for Channel ID {dedicatedChannel} | Guild {dedicatedGuild.GuildID}");
+                            continue;
+                        }
+
+                        await channel.SendMessageAsync(embed: embed);
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                logger.Warn($"Exception in LogEventInfo");
+                logger.Exception($"Exception in LogEventInfo\n{e}");
             }
         }
     }

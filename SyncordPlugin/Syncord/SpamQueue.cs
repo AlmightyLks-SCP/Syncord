@@ -14,7 +14,7 @@ namespace SyncordPlugin.Syncord
         private Queue<(ISynapseEventArgs Context, DateTime Time)> QueuedRequests;
         private DiscordEmbedBuilder embedBuilder;
 
-        public SpamQueue()
+        internal SpamQueue()
         {
             QueuedRequests = new Queue<(ISynapseEventArgs Context, DateTime Time)>();
             embedBuilder = new DiscordEmbedBuilder();

@@ -7,6 +7,5 @@ namespace SyncordPlugin.Config
     {
         [Description("Port which the Discord-Bot is listening to")]
         public int DiscordBotPort { get; set; } = 8000;
-
     }
 }

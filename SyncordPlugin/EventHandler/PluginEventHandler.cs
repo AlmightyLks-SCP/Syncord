@@ -12,7 +12,7 @@ namespace SyncordPlugin.EventHandler
     {
         internal SyncordBehaviour SyncordBehaviour { get; set; }
         private SpamQueue SpamQueue;
-        public PluginEventHandler()
+        internal PluginEventHandler()
         {
             SyncordBehaviour = new SyncordBehaviour();
             SpamQueue = new SpamQueue();

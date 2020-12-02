@@ -59,7 +59,6 @@ namespace SyncordBot
         private static async Task Discord_Ready(DSharpPlus.EventArgs.ReadyEventArgs e)
         {
             var game = new DiscordGame("SCP: Secret Laboratory");
-
             await Client.UpdateStatusAsync(game, UserStatus.Idle, DateTimeOffset.UtcNow);
         }
 
