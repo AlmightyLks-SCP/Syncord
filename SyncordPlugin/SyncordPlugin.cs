@@ -12,7 +12,7 @@ namespace SyncordPlugin
         SynapseMajor = 2,
         SynapseMinor = 2,
         SynapsePatch = 0,
-        Version = "1.0.0"
+        Version = "0.9.0"
         )]
     public class SyncordPlugin : AbstractPlugin
     {
