@@ -104,7 +104,7 @@ That way you can combine multiple Discord-Servers with different SL-Servers, cro
 
 ### SyncordPlugin
 
-Each server which you want to be connected to your SyncordBot has to point towards the bot's port.
+Each server which you want to connect to your SyncordBot has to point towards the bot's port.
 
 ```yaml
 [Syncord]
