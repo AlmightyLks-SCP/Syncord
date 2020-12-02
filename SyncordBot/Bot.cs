@@ -25,7 +25,6 @@ namespace SyncordBot
         {
             //Instantiate Logger
             logger = new Logger();
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(BotExiting);
 
             //Load Discord Bot Configs
             LoadConfigs();
@@ -61,9 +60,6 @@ namespace SyncordBot
             var game = new DiscordGame("SCP: Secret Laboratory");
             await Client.UpdateStatusAsync(game, UserStatus.Idle, DateTimeOffset.UtcNow);
         }
-
-        private static void BotExiting(object sender, EventArgs e)
-            => logger.FileLogExceptions();
 
         private static void LoadConfigs()
         {
