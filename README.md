@@ -11,6 +11,8 @@ To make it short, Syncord supports:
 What Syncord doesn't support (yet):
 - Logging SL-Server Events from a remote machine. (Bot & Server/s have to be on the same machine.)
 
+Special thanks to [GrafDimenzio](https://github.com/GrafDimenzio) for persistently & patiently helping me out with making good use of the [Synapse-API](https://github.com/SynapseSL/Synapse/). 😄
+
 ---
 ## Resources used / Versions used
 
