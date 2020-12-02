@@ -56,8 +56,10 @@ Regarding the `Guilds`... The way a Guild-entry is structured is as following:
     }
 }
 ```
+The valid Event Names can be found [here](). I am always open for suggestions!
 
-Which could look something like this:
+
+Which could look something like this in completion:
 
 ```json
 {
@@ -99,3 +101,24 @@ Which could look something like this:
 ```
 
 That way you can combine multiple Discord-Servers with different SL-Servers, cross-logging events.  
+
+### SyncordPlugin
+
+Each server which you want to be connected to your SyncordBot has to point towards the bot's port.
+
+```yaml
+[Syncord]
+{
+# Port which the Discord-Bot is listening to
+discordBotPort: 8000
+}
+```
+
+
+
+
+
+
+
+
+
