@@ -8,26 +8,33 @@ using Newtonsoft.Json;
 using SyncordBot.Syncord;
 using System;
 using DSharpPlus.Entities;
+using DSharpPlus.CommandsNext;
+using SyncordBot.Commands;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SyncordBot
 {
-    internal class Bot
+    public class Bot
     {
-        public static Config Configs { get; set; }
-        internal static DiscordClient Client { get; private set; }
-        internal static SyncordBehaviour Syncord { get; set; }
+        public Config Configs { get; set; }
+        public DiscordClient Client { get; set; }
+        public SyncordBehaviour Syncord { get; set; }
+        public CommandsNextExtension Commands { get; set; }
 
-        private static Logger logger;
+        private IServiceProvider _service;
+        private Logger logger;
 
+        //Entry-point
         static void Main()
-            => MainAsync().GetAwaiter().GetResult();
-        private async static Task MainAsync()
-        {
-            //Instantiate Logger
-            logger = new Logger();
+            => new Bot().MainAsync().GetAwaiter().GetResult();
 
+        private async Task MainAsync()
+        {
             //Load Discord Bot Configs
             LoadConfigs();
+
+            //Instantiate Logger
+            logger = new Logger();
 
             //Create Discord Client
             Client = new DiscordClient(new DiscordConfiguration()
@@ -38,16 +45,36 @@ namespace SyncordBot
                 MessageCacheSize = 0
             });
 
-            //Initialize Message Handling
-            MessageHandler.Init(Client);
+            Client.Ready += Client_Ready;
 
-            Client.Ready += Discord_Ready;
-
-            //Connect Discorc Client
+            //Connect Discord Client
             await Client.ConnectAsync();
 
             //Instantiate SyncordBehaviour
-            Syncord = new SyncordBehaviour(Client, logger);
+            Syncord = new SyncordBehaviour(this, logger);
+
+            //Adding singletons of the Bot, the Client & SyncordBehaviour
+            _service = new ServiceCollection()
+                .AddSingleton(this)
+                .BuildServiceProvider();
+
+            //Create Command Configs
+            var cmdCfg = new CommandsNextConfiguration
+            {
+                CaseSensitive = false,
+                EnableDefaultHelp = true,
+                StringPrefixes = new[] { Configs.Prefix },
+                IgnoreExtraArguments = true,
+                EnableMentionPrefix = false,
+                EnableDms = true,
+                Services = _service
+            };
+
+            //Register Commandhandler thingy
+            Commands = Client.UseCommandsNext(cmdCfg);
+
+            //Register Command
+            Commands.RegisterCommands<ServerStats>();
 
             //Run SyncordBehaviour
             _ = Syncord.Start();
@@ -55,13 +82,10 @@ namespace SyncordBot
             await Task.Delay(-1);
         }
 
-        private static async Task Discord_Ready(DSharpPlus.EventArgs.ReadyEventArgs e)
-        {
-            var game = new DiscordGame("SCP: Secret Laboratory");
-            await Client.UpdateStatusAsync(game, UserStatus.Idle, DateTimeOffset.UtcNow);
-        }
+        private async Task Client_Ready(DiscordClient sender, DSharpPlus.EventArgs.ReadyEventArgs e)
+            => await sender.UpdateStatusAsync(new DiscordActivity($"0 SCP SL Servers"), UserStatus.Online);
 
-        private static void LoadConfigs()
+        private void LoadConfigs()
         {
             Configs = new Config();
 

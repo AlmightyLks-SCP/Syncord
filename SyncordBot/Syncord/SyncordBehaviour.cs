@@ -15,20 +15,20 @@ using System.Threading.Tasks;
 
 namespace SyncordBot.Syncord
 {
-    internal class SyncordBehaviour
+    public class SyncordBehaviour
     {
         internal Dictionary<int, int> heartbeats { get; private set; }
+        private Bot bot;
         private Dictionary<int, TcpClient> clientConnections;
         private System.Timers.Timer heartbeatTimer;
         private TcpListener tcpListener;
-        private DiscordClient dClient;
         private BinaryFormatter binaryFormatter;
         private ILogger logger;
-        internal SyncordBehaviour(DiscordClient client, ILogger logger)
+        internal SyncordBehaviour(Bot bot, ILogger logger)
         {
-            dClient = client;
+            this.bot = bot;
             clientConnections = new Dictionary<int, TcpClient>();
-            tcpListener = new TcpListener(IPAddress.Loopback, Bot.Configs.Port);
+            tcpListener = new TcpListener(IPAddress.Loopback, bot.Configs.Port);
             heartbeats = new Dictionary<int, int>();
             binaryFormatter = new BinaryFormatter();
             heartbeatTimer = new System.Timers.Timer();
@@ -218,7 +218,7 @@ namespace SyncordBot.Syncord
                         continue;
 
                     //Send out Heartbeats to every client
-                    binaryFormatter.Serialize(connection.Value.GetStream(), new SharedInfo() { Port = Bot.Configs.Port, RequestType = RequestType.Heartbeat, Content = "Heartbeat" });
+                    binaryFormatter.Serialize(connection.Value.GetStream(), new SharedInfo() { Port = bot.Configs.Port, RequestType = RequestType.Heartbeat, Content = "Heartbeat" });
                     logger.Info($"Sent {((IPEndPoint)(connection.Value.Client.RemoteEndPoint)).Port} heartbeat");
                 }
             }
@@ -230,19 +230,15 @@ namespace SyncordBot.Syncord
         }
 
         private async Task UpdateBotActivity()
-        {
-            var game = new DiscordGame($"on {clientConnections.Count} SCP SL Servers");
+            => await bot.Client.UpdateStatusAsync(new DiscordActivity($"{clientConnections.Count} SCP SL Servers"), UserStatus.Online);
 
-            await dClient.UpdateStatusAsync(game, UserStatus.DoNotDisturb);
-        }
         private async void LogEventInfo(SharedInfo info)
         {
             try
             {
-
                 var embed = JsonConvert.DeserializeObject<DiscordEmbed>(info.Content);
 
-                foreach (var dedicatedGuild in Bot.Configs.Guilds.Where((_) => _.ServerPort == (info.Port)))
+                foreach (var dedicatedGuild in bot.Configs.Guilds.Where((_) => _.ServerPort == (info.Port)))
                 {
                     if (dedicatedGuild is null)
                     {
@@ -250,7 +246,7 @@ namespace SyncordBot.Syncord
                         continue;
                     }
 
-                    var guild = await dClient.GetGuildAsync(dedicatedGuild.GuildID);
+                    var guild = await bot.Client.GetGuildAsync(dedicatedGuild.GuildID);
 
                     if (guild is null)
                     {
