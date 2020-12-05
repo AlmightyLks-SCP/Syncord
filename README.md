@@ -19,7 +19,7 @@ Special thanks to [GrafDimenzio](https://github.com/GrafDimenzio) for persistent
 ### SyncordBot:  
   - .NET Core       3.1  
   - DSharpPlus      3.2.3
-  - Newtonsoft      10.0.3
+  - Newtonsoft      12.0.3
 ### SyncordInfo:  
   - .NET Framework  4.7.2
 ### SyncordPlugin:  
