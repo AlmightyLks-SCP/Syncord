@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace SyncordBot.EventHandlers
 {
-    internal class MessageHandler
+    public class MessageHandler
     {
         public Bot Bot { private get; set; }
-        internal static void Init(DiscordClient discord)
+        public static void Init(DiscordClient discord)
         {
             //discord.MessageAcknowledged += OnMessageAcknowledged;
             //discord.MessagesBulkDeleted += OnMessagesBulkDeleted;

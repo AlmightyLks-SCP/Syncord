@@ -11,6 +11,7 @@ using DSharpPlus.Entities;
 using DSharpPlus.CommandsNext;
 using SyncordBot.Commands;
 using Microsoft.Extensions.DependencyInjection;
+using SyncordBot.Models;
 
 namespace SyncordBot
 {
@@ -20,6 +21,7 @@ namespace SyncordBot
         public DiscordClient Client { get; set; }
         public SyncordBehaviour Syncord { get; set; }
         public CommandsNextExtension Commands { get; set; }
+        public ServerStats ServerStats { get; set; }
 
         private IServiceProvider _service;
         private Logger logger;
@@ -35,6 +37,9 @@ namespace SyncordBot
 
             //Instantiate Logger
             logger = new Logger();
+
+            //Instantiate ServerStats
+            ServerStats = new ServerStats();
 
             //Create Discord Client
             Client = new DiscordClient(new DiscordConfiguration()
@@ -74,7 +79,7 @@ namespace SyncordBot
             Commands = Client.UseCommandsNext(cmdCfg);
 
             //Register Command
-            Commands.RegisterCommands<ServerStats>();
+            Commands.RegisterCommands<ServerStatsCommand>();
 
             //Run SyncordBehaviour
             _ = Syncord.Start();

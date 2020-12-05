@@ -2,6 +2,7 @@
 using DSharpPlus.Entities;
 using Newtonsoft.Json;
 using SyncordBot.Logging;
+using SyncordBot.Models;
 using SyncordInfo;
 using System;
 using System.Collections.Generic;
@@ -17,25 +18,25 @@ namespace SyncordBot.Syncord
 {
     public class SyncordBehaviour
     {
-        internal Dictionary<int, int> heartbeats { get; private set; }
+        public Dictionary<int, int> Heartbeats { get; private set; }
         private Bot bot;
         private Dictionary<int, TcpClient> clientConnections;
         private System.Timers.Timer heartbeatTimer;
         private TcpListener tcpListener;
         private BinaryFormatter binaryFormatter;
         private ILogger logger;
-        internal SyncordBehaviour(Bot bot, ILogger logger)
+        public SyncordBehaviour(Bot bot, ILogger logger)
         {
             this.bot = bot;
             clientConnections = new Dictionary<int, TcpClient>();
             tcpListener = new TcpListener(IPAddress.Loopback, bot.Configs.Port);
-            heartbeats = new Dictionary<int, int>();
+            Heartbeats = new Dictionary<int, int>();
             binaryFormatter = new BinaryFormatter();
             heartbeatTimer = new System.Timers.Timer();
             this.logger = logger;
         }
 
-        internal async Task Start()
+        public async Task Start()
         {
             Task.Run(() => _ = ListenForClient());
 
@@ -94,7 +95,7 @@ namespace SyncordBot.Syncord
 
                     //Remove client from storage
                     clientConnections.Remove(con.Key);
-                    heartbeats.Remove(con.Key);
+                    Heartbeats.Remove(con.Key);
 
                     //End connections.
                     acceptedClient.GetStream().Close();
@@ -112,7 +113,7 @@ namespace SyncordBot.Syncord
 
                     //Remove from storage
                     clientConnections.Remove(con.Key);
-                    heartbeats.Remove(con.Key);
+                    Heartbeats.Remove(con.Key);
 
                     //End connections.
                     acceptedClient.GetStream().Close();
@@ -143,10 +144,10 @@ namespace SyncordBot.Syncord
                 {
                     case RequestType.Heartbeat:
                         {
-                            if (heartbeats.ContainsKey(info.Port))
-                                heartbeats[info.Port]++;
+                            if (Heartbeats.ContainsKey(info.Port))
+                                Heartbeats[info.Port]++;
                             else
-                                heartbeats.Add(info.Port, 1);
+                                Heartbeats.Add(info.Port, 1);
                         }
                         break;
                     case RequestType.Event:
@@ -159,7 +160,7 @@ namespace SyncordBot.Syncord
                             if (!clientConnections.Any((_) => _.Value == acceptedClient))
                             {
                                 clientConnections.Add(info.Port, acceptedClient);
-                                heartbeats.Add(info.Port, 1);
+                                Heartbeats.Add(info.Port, 1);
                             }
                         }
                         break;
@@ -180,7 +181,7 @@ namespace SyncordBot.Syncord
             {
                 foreach (var connection in clientConnections.ToArray())
                 {
-                    if (!heartbeats.TryGetValue(connection.Key, out int val))
+                    if (!Heartbeats.TryGetValue(connection.Key, out int val))
                         return;
 
                     if (val == 0) //If no hearbeats have been returned
@@ -188,7 +189,7 @@ namespace SyncordBot.Syncord
                         logger.Warn($"No hearbeats received from port {connection.Key}. Connection closed.");
 
                         //Remove from storage
-                        heartbeats.Remove(connection.Key);
+                        Heartbeats.Remove(connection.Key);
                         clientConnections.Remove(connection.Key);
 
                         //Close connection
@@ -196,8 +197,8 @@ namespace SyncordBot.Syncord
                     }
                 }
 
-                foreach (var _ in heartbeats.ToList())
-                    heartbeats[_.Key] = 0;
+                foreach (var _ in Heartbeats.ToList())
+                    Heartbeats[_.Key] = 0;
 
                 UpdateBotActivity();
                 await SendHeartbeats();
@@ -228,6 +229,22 @@ namespace SyncordBot.Syncord
                 logger.Exception($"Error sending Heartbeats:\n{e}");
             }
         }
+
+        private async Task QueryServerStats()
+        {
+            for (; ; )
+            {
+                foreach (var scpPort in clientConnections.Keys)
+                {
+                    //Query every server for stats
+                }
+            }
+        }
+        private async Task SendServerStats()
+        {
+
+        }
+
 
         private async Task UpdateBotActivity()
             => await bot.Client.UpdateStatusAsync(new DiscordActivity($"{clientConnections.Count} SCP SL Servers"), UserStatus.Online);
