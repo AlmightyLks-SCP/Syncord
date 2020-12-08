@@ -124,6 +124,9 @@ discordBotPort: 8000
 Download the files from the [Latest Release](https://github.com/AlmightyLks/Syncord/releases).  
 The Bot only has to be unpacked and stay within its own folder (For your own good, and to make sure of the file integrity).  
 It doesn't matter where you put the Bot-Folder, it only has to be on the same system.  
+You need to have the `.NET Core 3.1 Runtime` installed.  
+For Windows you can easily find it [here](https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.404-windows-x64-installer).  
+For Linux you can find it [here](https://docs.microsoft.com/en-gb/dotnet/core/install/linux).
 
 For the Server-sided things... You move the `SyncordInfo.dll`, `System.Data.dll`\*, `DSharpPlus.dll`\* & the `Newtonsoft.Json.dll`\*, which are uploaded, into your Synapse\dependencies folder.  
 After that, you simply move the `SyncordPlugin.dll` into your Server's plugin folder. Done!
