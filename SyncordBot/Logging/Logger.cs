@@ -5,10 +5,10 @@ using System.Text;
 
 namespace SyncordBot.Logging
 {
-    internal sealed class Logger : ILogger
+    public sealed class Logger : ILogger
     {
-        internal List<string> Exceptions { get; set; }
-        internal Logger()
+        public List<string> Exceptions { get; set; }
+        public Logger()
         {
             Exceptions = new List<string>();
         }

@@ -1,6 +1,6 @@
 ﻿namespace SyncordBot.Logging
 {
-    internal interface ILogger
+    public interface ILogger
     {
         public void Info(string data);
         public void Error(string data);
