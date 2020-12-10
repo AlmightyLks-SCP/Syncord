@@ -16,37 +16,27 @@ using System.Threading.Tasks;
 
 namespace SyncordBot.Syncord
 {
-    public class SyncordBehaviour
+    public class SyncordConnection
     {
-        public Dictionary<int, int> Heartbeats { get; private set; }
-        private Bot bot;
-        private Dictionary<int, TcpClient> clientConnections;
-        private System.Timers.Timer heartbeatTimer;
+        public Dictionary<int, TcpClient> ClientConnections { get; private set; }
         private TcpListener tcpListener;
         private BinaryFormatter binaryFormatter;
+        private Bot bot;
         private ILogger logger;
-        public SyncordBehaviour(Bot bot, ILogger logger)
+
+        public SyncordConnection(ILogger logger, Bot bot)
         {
-            this.bot = bot;
-            clientConnections = new Dictionary<int, TcpClient>();
-            tcpListener = new TcpListener(IPAddress.Loopback, bot.Configs.Port);
-            Heartbeats = new Dictionary<int, int>();
-            binaryFormatter = new BinaryFormatter();
-            heartbeatTimer = new System.Timers.Timer();
             this.logger = logger;
+            this.bot = bot;
+            ClientConnections = new Dictionary<int, TcpClient>();
+            tcpListener = new TcpListener(IPAddress.Loopback, bot.Configs.Port);
+            binaryFormatter = new BinaryFormatter();
         }
 
-        public async Task Start()
-        {
-            Task.Run(() => _ = ListenForClient());
+        public void Start()
+            => Task.Run(() => ListenForClient());
 
-            heartbeatTimer.Interval = 15_000;
-            heartbeatTimer.AutoReset = true;
-            heartbeatTimer.Elapsed += HeartbeatTimer_Elapsed;
-            heartbeatTimer.Start();
-        }
-
-        private async Task ListenForClient()
+        private void ListenForClient()
         {
             for (; ; )
             {
@@ -59,7 +49,7 @@ namespace SyncordBot.Syncord
                     TcpClient acceptedClient = tcpListener.AcceptTcpClient();
 
                     //Handle each client individually.
-                    Task.Run(() => { _ = AcceptData(acceptedClient); });
+                    Task.Run(() => { AcceptData(acceptedClient); });
                 }
                 catch (Exception e)
                 {
@@ -68,7 +58,7 @@ namespace SyncordBot.Syncord
                 }
             }
         }
-        private async Task AcceptData(TcpClient acceptedClient)
+        private void AcceptData(TcpClient acceptedClient)
         {
             for (; ; )
             {
@@ -91,11 +81,11 @@ namespace SyncordBot.Syncord
                     logger.Exception($"Socket connection for {port} was closed unexpectedly.\n{e}");
 
                     //Find connection
-                    var con = clientConnections.First((_) => _.Value == acceptedClient);
+                    var con = ClientConnections.First((_) => _.Value == acceptedClient);
 
                     //Remove client from storage
-                    clientConnections.Remove(con.Key);
-                    Heartbeats.Remove(con.Key);
+                    ClientConnections.Remove(con.Key);
+                    bot.Heartbeat.Heartbeats.Remove(con.Key);
 
                     //End connections.
                     acceptedClient.GetStream().Close();
@@ -109,15 +99,22 @@ namespace SyncordBot.Syncord
                     logger.Exception($"Could not serialize received data from {port}.\n{e}");
 
                     //Find client
-                    var con = clientConnections.First((_) => _.Value == acceptedClient);
+                    var con = ClientConnections.First((_) => _.Value == acceptedClient);
 
                     //Remove from storage
-                    clientConnections.Remove(con.Key);
-                    Heartbeats.Remove(con.Key);
+                    ClientConnections.Remove(con.Key);
+                    bot.Heartbeat.Heartbeats.Remove(con.Key);
 
                     //End connections.
                     acceptedClient.GetStream().Close();
                     acceptedClient.Close();
+                    break;
+                }
+                catch (InvalidOperationException e)
+                {
+                    int port = ((IPEndPoint)acceptedClient.Client.RemoteEndPoint).Port;
+                    logger.Error($"Exception on client for port {port}:\n{e}");
+                    logger.Exception($"Exception on client for port {port}:\n{e}");
                     break;
                 }
                 catch (Exception e)
@@ -144,10 +141,10 @@ namespace SyncordBot.Syncord
                 {
                     case RequestType.Heartbeat:
                         {
-                            if (Heartbeats.ContainsKey(info.Port))
-                                Heartbeats[info.Port]++;
+                            if (bot.Heartbeat.Heartbeats.ContainsKey(info.Port))
+                                bot.Heartbeat.Heartbeats[info.Port]++;
                             else
-                                Heartbeats.Add(info.Port, 1);
+                                bot.Heartbeat.Heartbeats.Add(info.Port, 1);
                         }
                         break;
                     case RequestType.Event:
@@ -157,10 +154,10 @@ namespace SyncordBot.Syncord
                         break;
                     case RequestType.Connect:
                         {
-                            if (!clientConnections.Any((_) => _.Value == acceptedClient))
+                            if (!ClientConnections.Any((_) => _.Value == acceptedClient))
                             {
-                                clientConnections.Add(info.Port, acceptedClient);
-                                Heartbeats.Add(info.Port, 1);
+                                ClientConnections.Add(info.Port, acceptedClient);
+                                bot.Heartbeat.Heartbeats.Add(info.Port, 1);
                             }
                         }
                         break;
@@ -172,83 +169,6 @@ namespace SyncordBot.Syncord
                 logger.Exception($"Exception in Handle data:\n{e}");
             }
         }
-
-        private async void HeartbeatTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-            => await CheckHeartbeats();
-        private async Task CheckHeartbeats()
-        {
-            try
-            {
-                foreach (var connection in clientConnections.ToArray())
-                {
-                    if (!Heartbeats.TryGetValue(connection.Key, out int val))
-                        return;
-
-                    if (val == 0) //If no hearbeats have been returned
-                    {
-                        logger.Warn($"No hearbeats received from port {connection.Key}. Connection closed.");
-
-                        //Remove from storage
-                        Heartbeats.Remove(connection.Key);
-                        clientConnections.Remove(connection.Key);
-
-                        //Close connection
-                        connection.Value.Client.Close();
-                    }
-                }
-
-                foreach (var _ in Heartbeats.ToList())
-                    Heartbeats[_.Key] = 0;
-
-                UpdateBotActivity();
-                await SendHeartbeats();
-            }
-            catch (Exception e)
-            {
-                logger.Error($"Exception in Check Heartbeats:\n{e}");
-                logger.Exception($"Exception in Check Heartbeats:\n{e}");
-            }
-        }
-        private async Task SendHeartbeats()
-        {
-            try
-            {
-                foreach (var connection in clientConnections.ToArray())
-                {
-                    if (!connection.Value.Connected)
-                        continue;
-
-                    //Send out Heartbeats to every client
-                    binaryFormatter.Serialize(connection.Value.GetStream(), new SharedInfo() { Port = bot.Configs.Port, RequestType = RequestType.Heartbeat, Content = "Heartbeat" });
-                    logger.Info($"Sent {((IPEndPoint)(connection.Value.Client.RemoteEndPoint)).Port} heartbeat");
-                }
-            }
-            catch (Exception e)
-            {
-                logger.Error($"Error sending Heartbeats:\n{e}");
-                logger.Exception($"Error sending Heartbeats:\n{e}");
-            }
-        }
-
-        private async Task QueryServerStats()
-        {
-            for (; ; )
-            {
-                foreach (var scpPort in clientConnections.Keys)
-                {
-                    //Query every server for stats
-                }
-            }
-        }
-        private async Task SendServerStats()
-        {
-
-        }
-
-
-        private async Task UpdateBotActivity()
-            => await bot.Client.UpdateStatusAsync(new DiscordActivity($"{clientConnections.Count} SCP SL Servers"), UserStatus.Online);
-
         private async void LogEventInfo(SharedInfo info)
         {
             try

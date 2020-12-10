@@ -19,7 +19,8 @@ namespace SyncordBot
     {
         public Config Configs { get; set; }
         public DiscordClient Client { get; set; }
-        public SyncordBehaviour Syncord { get; set; }
+        public SyncordConnection Syncord { get; set; }
+        public Heartbeat Heartbeat { get; set; }
         public CommandsNextExtension Commands { get; set; }
         public ServerStats ServerStats { get; set; }
 
@@ -55,8 +56,11 @@ namespace SyncordBot
             //Connect Discord Client
             await Client.ConnectAsync();
 
-            //Instantiate SyncordBehaviour
-            Syncord = new SyncordBehaviour(this, logger);
+            //Instantiate SyncordConnection
+            Syncord = new SyncordConnection(logger, this);
+
+            //Instantiate SyncordConnection
+            Heartbeat = new Heartbeat(logger, this);
 
             //Adding singletons of the Bot, the Client & SyncordBehaviour
             _service = new ServiceCollection()
@@ -82,7 +86,10 @@ namespace SyncordBot
             Commands.RegisterCommands<ServerStatsCommand>();
 
             //Run SyncordBehaviour
-            _ = Syncord.Start();
+            Syncord.Start();
+
+            //Run SyncordBehaviour
+            Heartbeat.Start();
 
             await Task.Delay(-1);
         }
