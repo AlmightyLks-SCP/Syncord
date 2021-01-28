@@ -1,84 +1,77 @@
 ﻿using Synapse.Api.Events.SynapseEventArguments;
 using SyncordPlugin.Syncord;
 using Newtonsoft.Json;
-using System.Threading.Tasks;
-using static Synapse.Api.Events.EventHandler;
 using System;
-using System.Collections.Generic;
 using MEC;
+using SyncordInfo.EventArgs;
+using EasyCommunication.SharedTypes;
+using Synapse.Api;
+using System.Threading.Tasks;
 
 namespace SyncordPlugin.EventHandler
 {
     internal class PluginEventHandler
     {
-        internal SyncordBehaviour SyncordBehaviour { get; set; }
-        private SpamQueue SpamQueue;
+        public CommunicationHandler CommunicationHandler { get; set; }
+
         internal PluginEventHandler()
         {
-            SyncordBehaviour = new SyncordBehaviour();
-            SpamQueue = new SpamQueue();
+            CommunicationHandler = new CommunicationHandler();
 
-            Get.Player.PlayerDeathEvent += OnPlayerDeathEvent;
-            Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
-            Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
-            Get.Round.SpawnPlayersEvent += OnSpawnPlayersEvent;
-            Get.Server.ConsoleCommandEvent += OnConsoleCommandEvent;
-            Get.Server.RemoteAdminCommandEvent += OnRemoteAdminCommandEvent;
-            Get.Player.PlayerBanEvent += OnPlayerBanEvent;
+            Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
+            Synapse.Api.Events.EventHandler.Get.Player.PlayerReportEvent += OnPlayerReportEvent;
+            //Synapse.Api.Events.EventHandler.Get.Player.PlayerDeathEvent += OnPlayerDeathEvent;
+            //Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
+            //Synapse.Api.Events.EventHandler.Get.Player.PlayerBanEvent += OnPlayerBanEvent;
+            //Synapse.Api.Events.EventHandler.Get.Server.ConsoleCommandEvent += OnConsoleCommandEvent;
+            //Synapse.Api.Events.EventHandler.Get.Server.RemoteAdminCommandEvent += OnRemoteAdminCommandEvent;
+            //Synapse.Api.Events.EventHandler.Get.Round.SpawnPlayersEvent += OnSpawnPlayersEvent;
         }
 
-        private void OnPlayerBanEvent(PlayerBanEventArgs ev)
-            => MakeAndSendEmbed(ev);
-        private void OnRemoteAdminCommandEvent(RemoteAdminCommandEventArgs ev)
-            => MakeAndSendEmbed(ev);
-        private void OnConsoleCommandEvent(ConsoleCommandEventArgs ev)
-            => MakeAndSendEmbed(ev);
-        private void OnPlayerLeaveEvent(PlayerLeaveEventArgs ev)
-            => MakeAndSendEmbed(ev);
-        private void OnSpawnPlayersEvent(SpawnPlayersEventArgs ev)
-            => Timing.CallDelayed(1f, () => MakeAndSendEmbed(ev));
-        internal void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
-            => MakeAndSendEmbed(ev);
-        internal void OnPlayerJoinEvent(PlayerJoinEventArgs ev)
-            => MakeAndSendEmbed(ev);
+        private void OnPlayerReportEvent(PlayerReportEventArgs ev)
+            => MakeAndSendData(ev);
 
-        private async void MakeAndSendEmbed(ISynapseEventArgs ev)
+        private void OnPlayerBanEvent(PlayerBanEventArgs ev)
+            => MakeAndSendData(ev);
+        private void OnRemoteAdminCommandEvent(RemoteAdminCommandEventArgs ev)
+            => MakeAndSendData(ev);
+        private void OnConsoleCommandEvent(ConsoleCommandEventArgs ev)
+            => MakeAndSendData(ev);
+        private void OnPlayerLeaveEvent(PlayerLeaveEventArgs ev)
+            => MakeAndSendData(ev);
+        private void OnSpawnPlayersEvent(SpawnPlayersEventArgs ev)
+            => Timing.CallDelayed(1f, () => MakeAndSendData(ev));
+        private void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
+            => MakeAndSendData(ev);
+        private void OnPlayerJoinEvent(PlayerJoinEventArgs ev)
+            => Timing.CallDelayed(0.1f, () => MakeAndSendData(ev));
+
+        private void MakeAndSendData(Synapse.Api.Events.EventHandler.ISynapseEventArgs ev)
         {
             try
             {
-                if (!SyncordBehaviour.ClientConnected)
+                if (!CommunicationHandler.EasyClient.ClientConnected)
                     return;
 
-                //if (ev is PlayerLeaveEventArgs playerLeave)
-                //{
-                //    SpamQueue.AddToQueue(playerLeave);
-                //}
-                //else if (ev is PlayerJoinEventArgs playerJoin)
-                //{
-                //    SpamQueue.AddToQueue(playerJoin);
-                //}
+                if (ev is PlayerJoinEventArgs)
+                {
+                    if ((ev as PlayerJoinEventArgs).TryParse(out PlayerJoined joinedArgs))
+                    {
+                        var status = CommunicationHandler.EasyClient.QueueData(joinedArgs, DataType.ProtoBuf);
+                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
+                            Logger.Get.Warn($"PlayerJoinEventArgs QueueStatus: {status}");
+                    }
+                    else if (SyncordPlugin.Config.DebugMode)
+                    {
+                        Logger.Get.Error($"Couldn't parse join information for {(ev as PlayerJoinEventArgs).Nickname} ({(ev as PlayerJoinEventArgs).Player.UserId})");
+                    }
+                }
 
-                //Create Embed
-                var dEmbed = ev.ToDiscordEmbedBuilder();
-
-                if (dEmbed is null)
-                    return;
-
-                //Serialize to Json
-                var dEmbedJson = JsonConvert.SerializeObject(dEmbed.Build());
-
-                //Send to Discord Bot if client is not off
-                var status = SyncordBehaviour.SendData(dEmbedJson);
-
-                SynapseController.Server.Logger.Info(status.ToString());
-            }
-            catch (InvalidOperationException)
-            {
-                SynapseController.Server.Logger.Error($"Stream to write into was aborted");
             }
             catch (Exception e)
             {
-                SynapseController.Server.Logger.Error($"Exception in MakeAndSendEmbed:\n{e}");
+                if (SyncordPlugin.Config.DebugMode)
+                    Logger.Get.Error($"MakeAndSendData: {e}");
             }
         }
     }

@@ -1,6 +1,9 @@
-﻿using Synapse.Api.Plugin;
+﻿using Synapse.Api;
+using Synapse.Api.Plugin;
 using SyncordPlugin.Config;
 using SyncordPlugin.EventHandler;
+using SyncordPlugin.Syncord;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace SyncordPlugin
@@ -16,12 +19,14 @@ namespace SyncordPlugin
         )]
     public class SyncordPlugin : AbstractPlugin
     {
-        private PluginEventHandler handler;
-
         [Synapse.Api.Plugin.Config(section = "Syncord")]
         public static SyncordConfig Config { get; set; }
 
+        private PluginEventHandler handler;
+
         public override void Load()
-            => handler = new PluginEventHandler();
+        {
+            handler = new PluginEventHandler();
+        }
     }
 }

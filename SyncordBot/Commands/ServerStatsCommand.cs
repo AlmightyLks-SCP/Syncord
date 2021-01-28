@@ -17,11 +17,11 @@ namespace SyncordBot.Commands
             if (server == "all") //Stats for all servers
             {
                 //If there is no scp server
-                if (Bot.Heartbeat.Heartbeats.Count == 0)
-                {
-                    await ctx.Message.RespondAsync("Not connected to any server.");
-                    return;
-                }
+                //if (Bot.TcpConnection.heartbeat.Heartbeats.Count == 0)
+                //{
+                //    await ctx.Message.RespondAsync("Not connected to any server.");
+                //    return;
+                //}
 
                 //Look for ServerStats Entry for this channel
                 var serverEntry = Bot.ServerStats.Servers.FirstOrDefault((_) => _.ChannelID == ctx.Channel.Id);
@@ -36,25 +36,25 @@ namespace SyncordBot.Commands
                         ServerPorts = new HashSet<int>()
                     };
 
-                    foreach (var port in Bot.Heartbeat.Heartbeats.Keys)
-                        channelServer.ServerPorts.Add(port);
+                    //foreach (var port in Bot.TcpConnection.heartbeat.Heartbeats.Keys)
+                    //    channelServer.ServerPorts.Add(port);
 
                     Bot.ServerStats.Servers.Add(channelServer);
                 }
                 else //If exists, add all ports to it
                 {
-                    foreach (var port in Bot.Heartbeat.Heartbeats.Keys)
-                        serverEntry.ServerPorts.Add(port);
+                    //foreach (var port in Bot.TcpConnection.heartbeat.Heartbeats.Keys)
+                    //    serverEntry.ServerPorts.Add(port);
                 }
             }
             else if (int.TryParse(server, out int serverPort)) //Stats for a specific server
             {
                 //If there is no scp server with that port
-                if (!Bot.Heartbeat.Heartbeats.ContainsKey(serverPort))
-                {
-                    await ctx.Message.RespondAsync("No Server with that port connected.");
-                    return;
-                }
+                //if (!Bot.TcpConnection.heartbeat.Heartbeats.ContainsKey(serverPort))
+                //{
+                //    await ctx.Message.RespondAsync("No Server with that port connected.");
+                //    return;
+                //}
 
                 //Look for ServerStats Entry for this channel
                 var serverEntry = Bot.ServerStats.Servers.FirstOrDefault((_) => _.ServerPorts.Any((e) => e == serverPort));
@@ -69,8 +69,8 @@ namespace SyncordBot.Commands
                         ServerPorts = new HashSet<int>()
                     };
 
-                    foreach (var port in Bot.Heartbeat.Heartbeats.Keys)
-                        channelServer.ServerPorts.Add(port);
+                    //foreach (var port in Bot.TcpConnection.heartbeat.Heartbeats.Keys)
+                    //    channelServer.ServerPorts.Add(port);
 
                     Bot.ServerStats.Servers.Add(channelServer);
                 }

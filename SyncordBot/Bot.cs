@@ -1,31 +1,32 @@
 ﻿using DSharpPlus;
-using SyncordBot.Logging;
 using SyncordBot.BotConfigs;
-using SyncordBot.EventHandlers;
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using SyncordBot.Syncord;
 using System;
 using DSharpPlus.Entities;
 using DSharpPlus.CommandsNext;
 using SyncordBot.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using SyncordBot.Models;
+using System.Net;
+using EasyCommunication.Host.Connection;
+using Serilog;
+using SyncordBot.SyncordCommunication;
 
 namespace SyncordBot
 {
     public class Bot
     {
-        public Config Configs { get; set; }
+        public static Config Configs { get; set; }
         public DiscordClient Client { get; set; }
-        public SyncordConnection Syncord { get; set; }
-        public Heartbeat Heartbeat { get; set; }
         public CommandsNextExtension Commands { get; set; }
         public ServerStats ServerStats { get; set; }
+        public EasyHost EasyHost { get; set; }
+        public CommunicationHandler CommunicationHandler { get; set; }
 
         private IServiceProvider _service;
-        private Logger logger;
+        private ILogger _logger;
 
         //Entry-point
         static void Main()
@@ -37,7 +38,18 @@ namespace SyncordBot
             LoadConfigs();
 
             //Instantiate Logger
-            logger = new Logger();
+            _logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .WriteTo.File("log.txt",
+                rollingInterval: RollingInterval.Hour,
+                rollOnFileSizeLimit: true)
+                .CreateLogger();
+
+            //Instantiate EasyHost
+            EasyHost = new EasyHost(5000, Configs.Port, IPAddress.Any);
+
+            //Instatiate CommunicationHandler
+            CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger);
 
             //Instantiate ServerStats
             ServerStats = new ServerStats();
@@ -56,15 +68,10 @@ namespace SyncordBot
             //Connect Discord Client
             await Client.ConnectAsync();
 
-            //Instantiate SyncordConnection
-            Syncord = new SyncordConnection(logger, this);
-
-            //Instantiate SyncordConnection
-            Heartbeat = new Heartbeat(logger, this);
-
-            //Adding singletons of the Bot, the Client & SyncordBehaviour
+            //Adding Singletons of the Bot & EasyHost
             _service = new ServiceCollection()
                 .AddSingleton(this)
+                .AddSingleton(EasyHost)
                 .BuildServiceProvider();
 
             //Create Command Configs
@@ -85,17 +92,11 @@ namespace SyncordBot
             //Register Command
             Commands.RegisterCommands<ServerStatsCommand>();
 
-            //Run SyncordBehaviour
-            Syncord.Start();
-
-            //Run SyncordBehaviour
-            Heartbeat.Start();
-
             await Task.Delay(-1);
         }
 
         private async Task Client_Ready(DiscordClient sender, DSharpPlus.EventArgs.ReadyEventArgs e)
-            => await sender.UpdateStatusAsync(new DiscordActivity($"0 SCP SL Servers"), UserStatus.Online);
+            => await sender.UpdateStatusAsync(new DiscordActivity($"0 SCP SL Servers", ActivityType.Watching), UserStatus.Online);
 
         private void LoadConfigs()
         {
