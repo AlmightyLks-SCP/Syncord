@@ -9,7 +9,7 @@ namespace SyncordPlugin.Command
         Description = "Reconnect your Server with the configured Discord Bot",
         Permission = "syncord.reconnect",
         Platforms = new Platform[] { Platform.RemoteAdmin, Platform.ServerConsole },
-        Usage = "syncord connect / syncord disconnect / syncord reconnect"
+        Usage = "syncord connect / syncord disconnect"
         )]
     public class SyncordConnection : ISynapseCommand
     {
@@ -42,9 +42,9 @@ namespace SyncordPlugin.Command
                         else
                         {
                             var conRes = CommunicationHandler.ConnectToHost();
-                            SynapseController.Server.Logger.Warn(conRes.ToString());
-                            result.Message = conRes ? "Connection established" : $"Connection failed. Is the entered IP & Port ({SyncordPlugin.Config.DiscordBotAddress}:{SyncordPlugin.Config.DiscordBotPort}) valid?";
-                            result.State = conRes ? CommandResultState.Ok : CommandResultState.Error;
+                            SynapseController.Server.Logger.Warn((conRes && CommunicationHandler.Singleton.EasyClient.ClientConnected).ToString());
+                            result.Message = (conRes && CommunicationHandler.Singleton.EasyClient.ClientConnected) ? "Connection established" : $"Connection failed. Is the entered IP & Port ({SyncordPlugin.Config.DiscordBotAddress}:{SyncordPlugin.Config.DiscordBotPort}) valid?";
+                            result.State = (conRes && CommunicationHandler.Singleton.EasyClient.ClientConnected) ? CommandResultState.Ok : CommandResultState.Error;
                         }
                     }
                     break;

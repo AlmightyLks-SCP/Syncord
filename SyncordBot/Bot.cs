@@ -68,6 +68,8 @@ namespace SyncordBot
             //Connect Discord Client
             await Client.ConnectAsync();
 
+            await CommunicationHandler.CreateChannelEmbedQueues();
+
             //Adding Singletons of the Bot & EasyHost
             _service = new ServiceCollection()
                 .AddSingleton(this)

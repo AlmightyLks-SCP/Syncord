@@ -12,10 +12,12 @@ namespace SyncordInfo.EventArgs
     public sealed class PlayerJoined
     {
         [ProtoMember(1)]
-        public int ServerPort { get; set; }
+        public string ServerAddress{ get; set; }
         [ProtoMember(2)]
-        public SimplePlayer Player { get; set; }
+        public int ServerPort { get; set; }
         [ProtoMember(3)]
+        public SimplePlayer Player { get; set; }
+        [ProtoMember(4)]
         public DateTime Time { get; set; }
     }
 }

@@ -10,7 +10,7 @@ namespace SyncordBot.SyncordCommunication
 {
     public static class SyncordEmbedBuilder
     {
-        public static DiscordEmbed ToEmbed(PlayerJoined ev)
+        public static DiscordEmbed ToEmbed(this PlayerJoined ev)
         {
             var embedBuilder = new DiscordEmbedBuilder();
 
@@ -36,7 +36,7 @@ namespace SyncordBot.SyncordCommunication
 
             return embedBuilder.Build();
         }
-        public static DiscordEmbed ToEmbed(List<PlayerJoined> ev)
+        public static DiscordEmbed ToEmbed(this List<PlayerJoined> ev)
         {
             var embedBuilder = new DiscordEmbedBuilder();
 
@@ -45,6 +45,7 @@ namespace SyncordBot.SyncordCommunication
             foreach (var joinedArgs in ev)
             {
                 var strBuilder = new StringBuilder();
+                strBuilder.AppendLine("```");
 
                 if (Bot.Configs.EmbedConfigs.PlayerJoinedConfig.ShowUserId)
                     strBuilder.AppendLine(joinedArgs.Player.UserId);
@@ -54,14 +55,14 @@ namespace SyncordBot.SyncordCommunication
                     strBuilder.AppendLine($"{(joinedArgs.Player.DoNotTrack ? "Do Not Track" : joinedArgs.Player.IPAddress)}");
 
                 strBuilder.AppendLine(joinedArgs.Time.ToShortTimeString());
+                strBuilder.AppendLine("```");
 
                 embedBuilder.AddField(joinedArgs.Player.Nickname,
                     strBuilder.ToString(),
                     true);
-            }
 
-            //embedBuilder.WithFooter($"Server: {ev.ServerPort}");
-            //embedBuilder.Timestamp = ev.Time;
+                embedBuilder.WithFooter($"Server: {ev[0].ServerAddress}:{ev[0].ServerPort}");
+            }
 
             return embedBuilder.Build();
         }

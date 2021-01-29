@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SyncordBot.Models;
+using System.Collections.Generic;
 
 namespace SyncordBot.BotConfigs
 {
@@ -6,6 +7,6 @@ namespace SyncordBot.BotConfigs
     {
         public ulong GuildID { get; set; } = 0;
         public int ServerPort { get; set; } = 0;
-        public Dictionary<string, ulong> DedicatedChannels { get; set; } = new Dictionary<string, ulong>();
+        public Dictionary<EventTypes, ulong> DedicatedChannels { get; set; } = new Dictionary<EventTypes, ulong>();
     }
 }
