@@ -52,22 +52,56 @@ namespace SyncordPlugin.Syncord
                 IPAddress = player.DoNotTrack ? string.Empty : player.IpAddress
             };
         }
-        public static PlayerJoined Parse(this PlayerJoinEventArgs ev)
+        public static bool TryParse(this Player player, out SimplePlayer simplePlayer)
         {
-            return new PlayerJoined()
+            try
             {
-                ServerPort = Server.Get.Port,
+                simplePlayer = new SimplePlayer()
+                {
+                    Ping = player.Ping,
+                    DisplayName = player.DisplayName,
+                    Nickname = player.NickName,
+                    Health = player.Health,
+                    MaxHealth = player.MaxHealth,
+                    ArtificialHealth = player.ArtificialHealth,
+                    MaxArtificialHealth = player.MaxArtificialHealth,
+                    RoleID = player.RoleID,
+                    RoleType = (int)player.RoleType,
+                    UserId = player.UserId,
+                    SynapseGroup = player.SynapseGroup.Parse(),
+                    DoNotTrack = player.DoNotTrack,
+                    IPAddress = player.DoNotTrack ? string.Empty : player.IpAddress
+                };
+            }
+            catch (Exception e)
+            {
+                Synapse.Api.Logger.Get.Error($"{e}");
+                simplePlayer = null;
+                return false;
+            }
+            return true;
+        }
+
+        public static PlayerJoinLeave Parse(this PlayerJoinEventArgs ev)
+        {
+            return new PlayerJoinLeave()
+            {
+                SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                Identifier = "join",
                 Player = ev.Player.Parse(),
                 Time = DateTime.Now
             };
         }
-        public static bool TryParse(this PlayerJoinEventArgs ev, out PlayerJoined joined)
+        public static bool TryParse(this PlayerJoinEventArgs ev, out PlayerJoinLeave joined)
         {
             try
             {
-                joined = new PlayerJoined()
+                joined = new PlayerJoinLeave()
                 {
-                    ServerPort = Server.Get.Port,
+                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    Identifier = "join",
                     Player = ev.Player.Parse(),
                     Time = DateTime.Now
                 };
@@ -76,6 +110,78 @@ namespace SyncordPlugin.Syncord
             {
                 Synapse.Api.Logger.Get.Error($"{e}");
                 joined = null;
+                return false;
+            }
+            return true;
+        }
+
+        public static PlayerJoinLeave Parse(this PlayerLeaveEventArgs ev)
+        {
+            return new PlayerJoinLeave()
+            {
+                SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                Identifier = "leave",
+                Player = ev.Player.Parse(),
+                Time = DateTime.Now
+            };
+        }
+        public static bool TryParse(this PlayerLeaveEventArgs ev, out PlayerJoinLeave left)
+        {
+            try
+            {
+                left = new PlayerJoinLeave()
+                {
+                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    Identifier = "leave",
+                    Player = ev.Player.Parse(),
+                    Time = DateTime.Now
+                };
+            }
+            catch (Exception e)
+            {
+                Synapse.Api.Logger.Get.Error($"{e}");
+                left = null;
+                return false;
+            }
+            return true;
+        }
+
+        public static PlayerReport Parse(this PlayerReportEventArgs ev)
+        {
+            return new PlayerReport()
+            {
+                SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                Allow = ev.Allow,
+                GlobalReport = ev.GlobalReport,
+                Reason = ev.Reason,
+                Reporter = ev.Reporter.Parse(),
+                Target = ev.Target.Parse(),
+                Time = DateTime.Now
+            };
+        }
+        public static bool TryParse(this PlayerReportEventArgs ev, out PlayerReport left)
+        {
+            try
+            {
+                left = new PlayerReport()
+                {
+                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    Allow = ev.Allow,
+                    GlobalReport = ev.GlobalReport,
+                    Reason = ev.Reason,
+                    Reporter = ev.Reporter.Parse(),
+                    Target = ev.Target.Parse(),
+                    Time = DateTime.Now
+                };
+            }
+            catch (Exception e)
+            {
+                Synapse.Api.Logger.Get.Error($"{e}");
+                left = null;
                 return false;
             }
             return true;

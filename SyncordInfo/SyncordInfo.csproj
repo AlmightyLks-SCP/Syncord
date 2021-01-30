@@ -63,7 +63,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EventArgs\PlayerJoined.cs" />
+    <Compile Include="EventArgs\PlayerJoinLeave.cs" />
     <Compile Include="EventArgs\PlayerReport.cs" />
     <Compile Include="Communication\Query.cs" />
     <Compile Include="Communication\Request.cs" />

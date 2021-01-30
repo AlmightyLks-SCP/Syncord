@@ -19,9 +19,9 @@ namespace SyncordPlugin.EventHandler
             CommunicationHandler = new CommunicationHandler();
 
             Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
+            Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerReportEvent += OnPlayerReportEvent;
             //Synapse.Api.Events.EventHandler.Get.Player.PlayerDeathEvent += OnPlayerDeathEvent;
-            //Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
             //Synapse.Api.Events.EventHandler.Get.Player.PlayerBanEvent += OnPlayerBanEvent;
             //Synapse.Api.Events.EventHandler.Get.Server.ConsoleCommandEvent += OnConsoleCommandEvent;
             //Synapse.Api.Events.EventHandler.Get.Server.RemoteAdminCommandEvent += OnRemoteAdminCommandEvent;
@@ -52,10 +52,12 @@ namespace SyncordPlugin.EventHandler
             {
                 if (!CommunicationHandler.EasyClient.ClientConnected)
                     return;
-
-                if (ev is PlayerJoinEventArgs)
+                //Console.WriteLine($"Hereeeeeeeeeee: \"{CustomNetworkManager.Ip}\"");
+                
+                //Parse Player Join Event Args
+                if (ev is PlayerJoinEventArgs join)
                 {
-                    if ((ev as PlayerJoinEventArgs).TryParse(out PlayerJoined joinedArgs))
+                    if (join.TryParse(out PlayerJoinLeave joinedArgs))
                     {
                         var status = CommunicationHandler.EasyClient.QueueData(joinedArgs, DataType.ProtoBuf);
                         if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
@@ -63,7 +65,21 @@ namespace SyncordPlugin.EventHandler
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
-                        Logger.Get.Error($"Couldn't parse join information for {(ev as PlayerJoinEventArgs).Nickname} ({(ev as PlayerJoinEventArgs).Player.UserId})");
+                        Logger.Get.Error($"Couldn't parse join information for {join?.Nickname} ({join?.Player?.UserId})");
+                    }
+                }
+                //Parse Player Leave Event Args
+                else if (ev is PlayerLeaveEventArgs leave)
+                {
+                    if (leave.TryParse(out PlayerJoinLeave leftArgs))
+                    {
+                        var status = CommunicationHandler.EasyClient.QueueData(leftArgs, DataType.ProtoBuf);
+                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
+                            Logger.Get.Warn($"PlayerLeaveEventArgs QueueStatus: {status}");
+                    }
+                    else if (SyncordPlugin.Config.DebugMode)
+                    {
+                        Logger.Get.Error($"Couldn't parse leave information for {leave?.Player?.NickName} ({leave?.Player?.UserId})");
                     }
                 }
 

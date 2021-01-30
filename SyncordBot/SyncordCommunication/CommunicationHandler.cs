@@ -12,6 +12,7 @@ using EasyCommunication.SharedTypes;
 using SyncordInfo.EventArgs;
 using System.Collections.Generic;
 using SyncordBot.BotConfigs;
+using SyncordBot.Models;
 
 namespace SyncordBot.SyncordCommunication
 {
@@ -19,7 +20,7 @@ namespace SyncordBot.SyncordCommunication
     {
         private Bot _bot;
         private EasyHost _easyHost;
-        private List<EmbedQueue> _embedQueue;
+        private List<EmbedQueue> _embedQueues;
         private ILogger _logger;
 
         public CommunicationHandler(EasyHost easyHost, Bot bot, ILogger logger)
@@ -27,7 +28,7 @@ namespace SyncordBot.SyncordCommunication
             _bot = bot;
             _logger = logger;
             _easyHost = easyHost;
-            _embedQueue = new List<EmbedQueue>();
+            _embedQueues = new List<EmbedQueue>();
 
             easyHost.EventHandler.ReceivedData += ReceivedDataFromSLServer;
             easyHost.EventHandler.ClientConnected += SLServerConnected;
@@ -62,19 +63,45 @@ namespace SyncordBot.SyncordCommunication
                             continue;
                         }
 
-                        EmbedQueue embedQueueElement = _embedQueue.FirstOrDefault(_ => _.DiscordChannel.Id == dedicatedChannel.Value);
+                        EmbedQueue embedQueueElement = _embedQueues.FirstOrDefault(_ => _.DiscordChannel.Id == dedicatedChannel.Value);
                         if (embedQueueElement == null)
                         {
-                            _embedQueue.Add(new EmbedQueue()
+                            var embedQueue = new EmbedQueue(_logger)
                             {
-                                DiscordChannel = channel,
-                                SLPort = dedicatedGuild.ServerPort
-                            });
+                                DiscordChannel = channel
+                            };
+
+                            if(dedicatedChannel.Key == EventTypes.PlayerJoin)
+                            {
+                                embedQueue.PlayerJoinedQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
+                                {
+                                    { dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>() }
+                                };
+                            }
+                            else if(dedicatedChannel.Key == EventTypes.PlayerLeave)
+                            {
+                                embedQueue.PlayerLeftQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
+                                {
+                                    { dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>() }
+                                };
+                            }
+                            _embedQueues.Add(embedQueue);
+                        }
+                        else
+                        {
+                            if (dedicatedChannel.Key == EventTypes.PlayerJoin)
+                            {
+                                embedQueueElement.PlayerJoinedQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
+                            }
+                            else if (dedicatedChannel.Key == EventTypes.PlayerLeave)
+                            {
+                                embedQueueElement.PlayerLeftQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
+                            }
                         }
                     }
                     catch (Exception e)
                     {
-                        _logger.Error($"Exception in LogEventInfo");
+                        _logger.Error($"Exception in CreateChannelEmbedQueues");
                     }
                 }
             }
@@ -86,12 +113,46 @@ namespace SyncordBot.SyncordCommunication
             {
                 case DataType.ProtoBuf:
                     {
-                        if (ev.Data.TryDeserialize(out PlayerJoined joined))
+                        if (ev.Data.TryDeserialize(out PlayerJoinLeave joinLeave))
                         {
-                            Console.WriteLine($"{joined.Player.Nickname} joined!");
-                            joined.ServerAddress = ev.Sender?.GetIPv4();
-                            var embedQueueElement = _embedQueue.FirstOrDefault(_ => _.SLPort == joined.ServerPort);
-                            embedQueueElement.PlayerJoinedQueue.Enqueue(joined);
+                            if (joinLeave.Identifier == "join")
+                            {
+                                Console.WriteLine($"{joinLeave.Player.Nickname} joined {joinLeave.SLFullAddress}!");
+                                string ipAddress = joinLeave.SameMachine ? $"127.0.0.1:{joinLeave.SLFullAddress.Split(':')[1]}" : joinLeave.SLFullAddress;
+
+                                var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.PlayerJoinedQueue.ContainsKey(ipAddress));
+                                if (embedQueueElement == null)
+                                {
+                                    _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server");
+                                    return;
+                                }
+                                Queue<PlayerJoinLeave> joinQueue = embedQueueElement.PlayerJoinedQueue[ipAddress];
+                                if (joinQueue == null)
+                                {
+                                    _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
+                                    return;
+                                }
+                                joinQueue.Enqueue(joinLeave);
+                            }
+                            else if (joinLeave.Identifier == "leave")
+                            {
+                                Console.WriteLine($"{joinLeave.Player.Nickname} left {joinLeave.SLFullAddress}!");
+                                string ipAddress = joinLeave.SameMachine ? $"127.0.0.1:{joinLeave.SLFullAddress.Split(':')[1]}" : joinLeave.SLFullAddress;
+
+                                var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.PlayerLeftQueue.ContainsKey(ipAddress));
+                                if (embedQueueElement == null)
+                                {
+                                    _logger.Warning($"ReceivedDataFromSLServer: Received leave data from unconfigured SL Server");
+                                    return;
+                                }
+                                Queue<PlayerJoinLeave> joinQueue = embedQueueElement.PlayerLeftQueue[ipAddress];
+                                if (joinQueue == null)
+                                {
+                                    _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
+                                    return;
+                                }
+                                joinQueue.Enqueue(joinLeave);
+                            }
                         }
                         break;
                     }
@@ -107,45 +168,5 @@ namespace SyncordBot.SyncordCommunication
         {
             Console.WriteLine("A client connected");
         }
-
-        //private async Task LogEventInfo(string type)
-        //{
-        //    try
-        //    {
-        //        foreach (var dedicatedGuild in Bot.Configs.Guilds.Where((_) => _.ServerPort == (info.Port)))
-        //        {
-        //            if (dedicatedGuild is null)
-        //            {
-        //                _logger.Warning($"No dedicated server found for Port {info.Port}");
-        //                continue;
-        //            }
-
-        //            var guild = await _bot.Client.GetGuildAsync(dedicatedGuild.GuildID);
-
-        //            if (guild is null)
-        //            {
-        //                _logger.Warning($"No Guild found for Guild ID {dedicatedGuild.GuildID}");
-        //                continue;
-        //            }
-
-        //            foreach (var dedicatedChannel in dedicatedGuild.DedicatedChannels.Where((_) => _.Key == embed.Title))
-        //            {
-        //                var channel = guild.GetChannel(dedicatedChannel.Value);
-
-        //                if (channel is null)
-        //                {
-        //                    _logger.Warning($"No Channel found for Channel ID {dedicatedChannel} | Guild {dedicatedGuild.GuildID}");
-        //                    continue;
-        //                }
-
-        //                await channel.SendMessageAsync(embed: embed);
-        //            }
-        //        }
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        _logger.Error($"Exception in LogEventInfo");
-        //    }
-        //}
     }
 }

@@ -2,11 +2,11 @@
 {
     public class EmbedConfig
     {
-        public PlayerJoinedConfig PlayerJoinedConfig { get; set; }
+        public PlayerJoinedLeftConfig PlayerJoinedLeftConfig { get; set; }
 
         public EmbedConfig()
         {
-            PlayerJoinedConfig = new PlayerJoinedConfig()
+            PlayerJoinedLeftConfig = new PlayerJoinedLeftConfig()
             {
                 ShowIP = false,
                 ShowUserId = true,

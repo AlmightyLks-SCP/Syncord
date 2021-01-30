@@ -13,15 +13,20 @@ namespace SyncordBot.SyncordCommunication
 {
     public sealed class EmbedQueue
     {
-        public int SLPort { get; set; }
         public DiscordChannel DiscordChannel { get; set; }
-        public Queue<PlayerJoined> PlayerJoinedQueue { get; set; }
+        public Dictionary<string, Queue<PlayerJoinLeave>> PlayerJoinedQueue { get; set; }
+        public Dictionary<string, Queue<PlayerJoinLeave>> PlayerLeftQueue { get; set; }
+        public Dictionary<string, Queue<PlayerReport>> PlayerReportQueue { get; set; }
 
-        public EmbedQueue()
+        private ILogger _logger;
+
+        public EmbedQueue(ILogger logger)
         {
-            SLPort = 0;
             DiscordChannel = null;
-            PlayerJoinedQueue = new Queue<PlayerJoined>();
+            PlayerJoinedQueue = new Dictionary<string, Queue<PlayerJoinLeave>>();
+            PlayerLeftQueue = new Dictionary<string, Queue<PlayerJoinLeave>>();
+            PlayerReportQueue = new Dictionary<string, Queue<PlayerReport>>();
+            _logger = logger;
 
             ProcessDataQueue();
         }
@@ -29,12 +34,37 @@ namespace SyncordBot.SyncordCommunication
         {
             while (true)
             {
-                await Task.Delay(150000);
-                if (PlayerJoinedQueue.Count != 0)
+                await Task.Delay(1000);
+                try
                 {
-                    var playerJoinedArgs = PlayerJoinedQueue.ChunkBy(10).ToList();
-                    var embed = playerJoinedArgs.ToEmbed();
-                    await DiscordChannel.SendMessageAsync(embed: embed);
+                    if (PlayerJoinedQueue.Any(_ => _.Value.Count != 0))
+                    {
+                        var ipAndQueue = PlayerJoinedQueue.FirstOrDefault(_ => _.Value.Count != 0);
+
+                        var playerJoinedArgs = ipAndQueue.Value.ChunkBy(25);
+                        var embed = playerJoinedArgs.ToEmbed();
+                        await DiscordChannel.SendMessageAsync(embed: embed);
+                    }
+                    else if (PlayerLeftQueue.Any(_ => _.Value.Count != 0))
+                    {
+                        var ipAndQueue = PlayerLeftQueue.FirstOrDefault(_ => _.Value.Count != 0);
+
+                        var playerLeftArgs = ipAndQueue.Value.ChunkBy(25);
+                        var embed = playerLeftArgs.ToEmbed();
+                        await DiscordChannel.SendMessageAsync(embed: embed);
+                    }
+                    else if (PlayerReportQueue.Any(_ => _.Value.Count != 0))
+                    {
+                        var ipAndQueue = PlayerReportQueue.FirstOrDefault(_ => _.Value.Count != 0);
+
+                        var playerReportArgs = ipAndQueue.Value.ChunkBy(25);
+                        var embed = playerReportArgs.ToEmbed();
+                        await DiscordChannel.SendMessageAsync(embed: embed);
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.Error($"Exception in ProcessDataQueue");
                 }
             }
         }

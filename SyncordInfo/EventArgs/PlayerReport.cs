@@ -12,16 +12,20 @@ namespace SyncordInfo.EventArgs
     public sealed class PlayerReport
     {
         [ProtoMember(1)]
-        public int ServerPort { get; set; }
+        public bool SameMachine { get; set; }
         [ProtoMember(2)]
-        public SimplePlayer Reporter { get; }
+        public string SLFullAddress { get; set; }
         [ProtoMember(3)]
-        public SimplePlayer Target { get; }
+        public SimplePlayer Reporter { get; set; }
         [ProtoMember(4)]
-        public string Reason { get; }
+        public SimplePlayer Target { get; set; }
         [ProtoMember(5)]
-        public bool GlobalReport { get; set; }
+        public string Reason { get; set; }
         [ProtoMember(6)]
+        public bool GlobalReport { get; set; }
+        [ProtoMember(7)]
         public bool Allow { get; set; }
+        [ProtoMember(8)]
+        public DateTime Time { get; set; }
     }
 }

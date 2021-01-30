@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace SyncordBot.Helper
 {
@@ -10,15 +6,13 @@ namespace SyncordBot.Helper
     {
         //Inspiration:  https://github.com/DidacticalEnigma/DidacticalEnigma.Core/blob/main/Utility/Utils/EnumerableExt.cs#L73
         //Credits:      https://github.com/milleniumbug
-        public static IEnumerable<T> ChunkBy<T>(this Queue<T> input, uint n)
+        public static T[] ChunkBy<T>(this Queue<T> input, int n)
         {
-            int initCount = input.Count;
+            int initCount = (n > input.Count ? input.Count : n);
+            T[] result = new T[initCount];
             for (int i = 0; i < initCount; i++)
-            {
-                if (i == n)
-                    break;
-                yield return input.Dequeue();
-            }
+                result[i] = input.Dequeue();
+            return result;
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SyncordBot.Configs.EmbedConfigs
 {
-    public struct PlayerJoinedConfig
+    public struct PlayerJoinedLeftConfig
     {
         public bool ShowUserId { get; set; }
         public bool ShowPing { get; set; }
