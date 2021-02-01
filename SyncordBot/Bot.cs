@@ -1,16 +1,15 @@
 ﻿using DSharpPlus;
-using SyncordBot.BotConfigs;
+using SyncordBot.Configs.BotConfigs;
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System;
 using DSharpPlus.Entities;
 using DSharpPlus.CommandsNext;
-using SyncordBot.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using SyncordBot.Models;
 using System.Net;
-using EasyCommunication.Host.Connection;
+using EasyCommunication.Host;
 using Serilog;
 using SyncordBot.SyncordCommunication;
 
@@ -46,7 +45,10 @@ namespace SyncordBot
                 .CreateLogger();
 
             //Instantiate EasyHost
-            EasyHost = new EasyHost(5000, Configs.Port, IPAddress.Any);
+            EasyHost = new EasyHost(2500, Configs.Port, IPAddress.Any)
+            {
+                BufferSize = 2048
+            };
 
             //Instatiate CommunicationHandler
             CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger);
@@ -92,11 +94,32 @@ namespace SyncordBot
             Commands = Client.UseCommandsNext(cmdCfg);
 
             //Register Command
-            Commands.RegisterCommands<ServerStatsCommand>();
+            //Commands.RegisterCommands<ServerStatsCommand>();
+            
+            //Fire and forget
+            UpdatePresence();
 
             await Task.Delay(-1);
         }
-
+        private async Task UpdatePresence()
+        {
+            while (true)
+            {
+                try
+                {
+                    await Task.Delay(22500);
+                    await Client.UpdateStatusAsync(new DiscordActivity()
+                    {
+                        ActivityType = Configs.DiscordActivity.Activity,
+                        Name = Configs.DiscordActivity.Name.Replace("{SLCount}", EasyHost.ClientConnections.Count.ToString())
+                    });
+                }
+                catch (Exception e)
+                {
+                    _logger.Error($"UpdatePresence threw:\n{e}");
+                }
+            }
+        }
         private async Task Client_Ready(DiscordClient sender, DSharpPlus.EventArgs.ReadyEventArgs e)
             => await sender.UpdateStatusAsync(new DiscordActivity($"0 SCP SL Servers", ActivityType.Watching), UserStatus.Online);
 

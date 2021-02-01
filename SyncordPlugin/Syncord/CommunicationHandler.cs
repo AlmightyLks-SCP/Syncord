@@ -1,6 +1,10 @@
-﻿using System.Net;
-using EasyCommunication.Client.Connection;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
+using EasyCommunication.Client;
 using EasyCommunication.Events.Client.EventArgs;
+using MEC;
 using Synapse.Api;
 
 namespace SyncordPlugin.Syncord
@@ -13,19 +17,37 @@ namespace SyncordPlugin.Syncord
         public CommunicationHandler()
         {
             Singleton = this;
-            EasyClient = new EasyClient();
-
+            EasyClient = new EasyClient()
+            {
+                BufferSize = 2048
+            };
+            Timing.RunCoroutine(AutoReconnect());
             EasyClient.EventHandler.ConnectedToHost += OnConnectedToHost;
             EasyClient.EventHandler.DisconnectedFromHost += OnDisconnectedFromHost;
+        }
+        private IEnumerator<float> AutoReconnect()
+        {
+            for (; ; )
+            {
+                yield return Timing.WaitForSeconds(3f);
+                if (EasyClient.ClientConnected || !SyncordPlugin.Config.AutoReconnect)
+                    continue;
+                if (IPAddress.TryParse(SyncordPlugin.Config.DiscordBotAddress, out IPAddress botAddress))
+                    EasyClient.ConnectToHost(botAddress, SyncordPlugin.Config.DiscordBotPort);
+                if (SyncordPlugin.Config.DebugMode)
+                    Logger.Get.Info($"Reconnected: {EasyClient.ClientConnected}");
+            }
         }
 
         private void OnDisconnectedFromHost(DisconnectedFromHostEventArgs ev)
         {
-            Logger.Get.Info("Lost connection to host");
+            if (SyncordPlugin.Config.DebugMode)
+                Logger.Get.Warn($"Lost connection to host.");
         }
         private void OnConnectedToHost(ConnectedToHostEventArgs ev)
         {
-            Logger.Get.Info("Connected to host");
+            if (SyncordPlugin.Config.DebugMode)
+                Logger.Get.Warn("Connected to host");
         }
 
         public static bool ConnectToHost()

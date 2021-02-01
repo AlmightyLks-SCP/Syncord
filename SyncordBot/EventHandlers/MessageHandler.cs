@@ -17,7 +17,6 @@ namespace SyncordBot.EventHandlers
 
         private Task OnMessageAcknowledged(MessageAcknowledgeEventArgs e)
         {
-            Console.WriteLine("Message Acknowledged");
             return Task.CompletedTask;
         }
         private Task OnMessagesBulkDeleted(MessageBulkDeleteEventArgs e)

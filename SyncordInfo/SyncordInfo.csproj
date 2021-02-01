@@ -63,13 +63,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EventArgs\PlayerBan.cs" />
+    <Compile Include="EventArgs\PlayerDeath.cs" />
+    <Compile Include="EventArgs\SynEventArgs.cs" />
     <Compile Include="EventArgs\PlayerJoinLeave.cs" />
-    <Compile Include="EventArgs\PlayerReport.cs" />
     <Compile Include="Communication\Query.cs" />
     <Compile Include="Communication\Request.cs" />
+    <Compile Include="EventArgs\RoundEnd.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Communication\Response.cs" />
+    <Compile Include="SimplifiedTypes\SimpleCustomRole.cs" />
+    <Compile Include="SimplifiedTypes\SimpleDamageType.cs" />
+    <Compile Include="SimplifiedTypes\SimpleHitInfo.cs" />
     <Compile Include="SimplifiedTypes\SimplePlayer.cs" />
+    <Compile Include="SimplifiedTypes\SimpleRoundSummary.cs" />
     <Compile Include="SimplifiedTypes\SimpleSynapseGroup.cs" />
     <Compile Include="SimplifiedTypes\SimpleVector3.cs" />
   </ItemGroup>

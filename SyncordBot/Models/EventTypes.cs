@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SyncordBot.Models
+﻿namespace SyncordBot.Models
 {
     public enum EventTypes
     {
         PlayerJoin,
         PlayerLeave,
+        PlayerDeath,
         PlayerBan,
-        RoundStart,
-        PlayerDeath
+        RoundSummary
     }
 }

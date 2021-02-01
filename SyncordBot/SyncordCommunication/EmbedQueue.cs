@@ -16,7 +16,9 @@ namespace SyncordBot.SyncordCommunication
         public DiscordChannel DiscordChannel { get; set; }
         public Dictionary<string, Queue<PlayerJoinLeave>> PlayerJoinedQueue { get; set; }
         public Dictionary<string, Queue<PlayerJoinLeave>> PlayerLeftQueue { get; set; }
-        public Dictionary<string, Queue<PlayerReport>> PlayerReportQueue { get; set; }
+        public Dictionary<string, Queue<RoundEnd>> RoundEndQueue { get; set; }
+        public Dictionary<string, Queue<PlayerDeath>> PlayerDeathQueue { get; set; }
+        public Dictionary<string, Queue<PlayerBan>> PlayerBanQueue { get; set; }
 
         private ILogger _logger;
 
@@ -25,7 +27,10 @@ namespace SyncordBot.SyncordCommunication
             DiscordChannel = null;
             PlayerJoinedQueue = new Dictionary<string, Queue<PlayerJoinLeave>>();
             PlayerLeftQueue = new Dictionary<string, Queue<PlayerJoinLeave>>();
-            PlayerReportQueue = new Dictionary<string, Queue<PlayerReport>>();
+            RoundEndQueue = new Dictionary<string, Queue<RoundEnd>>();
+            PlayerDeathQueue = new Dictionary<string, Queue<PlayerDeath>>();
+            PlayerBanQueue = new Dictionary<string, Queue<PlayerBan>>();
+
             _logger = logger;
 
             ProcessDataQueue();
@@ -53,18 +58,34 @@ namespace SyncordBot.SyncordCommunication
                         var embed = playerLeftArgs.ToEmbed();
                         await DiscordChannel.SendMessageAsync(embed: embed);
                     }
-                    else if (PlayerReportQueue.Any(_ => _.Value.Count != 0))
+                    else if (RoundEndQueue.Any(_ => _.Value.Count != 0))
                     {
-                        var ipAndQueue = PlayerReportQueue.FirstOrDefault(_ => _.Value.Count != 0);
+                        var ipAndQueue = RoundEndQueue.FirstOrDefault(_ => _.Value.Count != 0);
 
-                        var playerReportArgs = ipAndQueue.Value.ChunkBy(25);
-                        var embed = playerReportArgs.ToEmbed();
+                        var roundEndArgs = ipAndQueue.Value.Dequeue();
+                        var embed = roundEndArgs.ToEmbed();
+                        await DiscordChannel.SendMessageAsync(embed: embed);
+                    }
+                    else if (PlayerDeathQueue.Any(_ => _.Value.Count != 0))
+                    {
+                        var ipAndQueue = PlayerDeathQueue.FirstOrDefault(_ => _.Value.Count != 0);
+
+                        var playerDeathArgs = ipAndQueue.Value.ChunkBy(8);
+                        var embed = playerDeathArgs.ToEmbed();
+                        await DiscordChannel.SendMessageAsync(embed: embed);
+                    }
+                    else if (PlayerBanQueue.Any(_ => _.Value.Count != 0))
+                    {
+                        var ipAndQueue = PlayerBanQueue.FirstOrDefault(_ => _.Value.Count != 0);
+
+                        var playerBanDeath = ipAndQueue.Value.ChunkBy(8);
+                        var embed = playerBanDeath.ToEmbed();
                         await DiscordChannel.SendMessageAsync(embed: embed);
                     }
                 }
                 catch (Exception e)
                 {
-                    _logger.Error($"Exception in ProcessDataQueue");
+                    _logger.Error($"Exception in ProcessDataQueue\n{e}");
                 }
             }
         }

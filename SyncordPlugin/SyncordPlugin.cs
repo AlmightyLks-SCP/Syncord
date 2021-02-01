@@ -1,10 +1,7 @@
-﻿using Synapse.Api;
+﻿using Synapse.Api.Events.SynapseEventArguments;
 using Synapse.Api.Plugin;
 using SyncordPlugin.Config;
 using SyncordPlugin.EventHandler;
-using SyncordPlugin.Syncord;
-using System.Reflection;
-using System.Threading.Tasks;
 
 namespace SyncordPlugin
 {
@@ -15,7 +12,7 @@ namespace SyncordPlugin
         SynapseMajor = 2,
         SynapseMinor = 2,
         SynapsePatch = 0,
-        Version = "0.9.0"
+        Version = "0.9.1"
         )]
     public class SyncordPlugin : AbstractPlugin
     {

@@ -1,6 +1,7 @@
 ﻿using Synapse;
 using Synapse.Api;
 using Synapse.Api.Events.SynapseEventArguments;
+using Synapse.Api.Roles;
 using Synapse.Permission;
 using SyncordInfo.EventArgs;
 using SyncordInfo.SimplifiedTypes;
@@ -28,55 +29,136 @@ namespace SyncordPlugin.Syncord
                 Cover = group.Cover
             };
         }
+        public static SimpleDamageType Parse(this DamageTypes.DamageType damageType)
+        {
+            return new SimpleDamageType()
+            {
+                IsScp = damageType.isScp,
+                IsWeapon = damageType.isWeapon,
+                Name = damageType.name,
+                WeaponId = damageType.weaponId
+            };
+        }
+        public static SimpleHitInfo Parse(this PlayerStats.HitInfo hitInfo)
+        {
+            return new SimpleHitInfo()
+            {
+                Amount = hitInfo.Amount,
+                Attacker = hitInfo.Attacker,
+                Tool = hitInfo.Tool,
+                DamageType = hitInfo.GetDamageType().Parse(),
+                Time = hitInfo.Time
+            };
+        }
         public static Vector3 Parse(this SimpleVector3 simpleVector3)
             => new Vector3(simpleVector3.X, simpleVector3.Y, simpleVector3.Z);
         public static SimpleVector3 Parse(this Vector3 vector)
             => new SimpleVector3(vector.x, vector.y, vector.z);
 
-        public static SimplePlayer Parse(this Player player)
+        public static SimpleCustomRole Parse(this RoleType role, Team team)
+        {
+            return new SimpleCustomRole()
+            {
+                Role = (role.ToString(), (int)role),
+                Team = (team.ToString(), (byte)team)
+            };
+        }
+        public static SimpleCustomRole Parse(this IRole role)
+        {
+            return new SimpleCustomRole()
+            {
+                Role = (role.GetRoleName(), role.GetRoleID()),
+                Team = (role.GetTeam().ToString(), (byte)role.GetTeam())
+            };
+        }
+        public static bool TryParse(this IRole role, out SimpleCustomRole simpleCustomRole)
+        {
+            try
+            {
+                simpleCustomRole = role.Parse();
+            }
+            catch (Exception e)
+            {
+                Synapse.Api.Logger.Get.Error($"{e}");
+                simpleCustomRole = null;
+                return false;
+            }
+            return true;
+        }
+
+        public static SimplePlayer Parse(this Player player, bool isLeaving = false)
         {
             return new SimplePlayer()
             {
-                Ping = player.Ping,
+                Ping = isLeaving ? -1 : player.Ping,
                 DisplayName = player.DisplayName,
                 Nickname = player.NickName,
                 Health = player.Health,
                 MaxHealth = player.MaxHealth,
                 ArtificialHealth = player.ArtificialHealth,
                 MaxArtificialHealth = player.MaxArtificialHealth,
-                RoleID = player.RoleID,
-                RoleType = (int)player.RoleType,
+                Role = player.CustomRole == null ? player.RoleType.Parse(player.Team) : player.CustomRole.Parse(),
                 UserId = player.UserId,
                 SynapseGroup = player.SynapseGroup.Parse(),
                 DoNotTrack = player.DoNotTrack,
-                IPAddress = player.DoNotTrack ? string.Empty : player.IpAddress
+                IPAddress = player.DoNotTrack ? string.Empty : player.IpAddress,
+                IsCuffed = player.IsCuffed
             };
         }
         public static bool TryParse(this Player player, out SimplePlayer simplePlayer)
         {
             try
             {
-                simplePlayer = new SimplePlayer()
-                {
-                    Ping = player.Ping,
-                    DisplayName = player.DisplayName,
-                    Nickname = player.NickName,
-                    Health = player.Health,
-                    MaxHealth = player.MaxHealth,
-                    ArtificialHealth = player.ArtificialHealth,
-                    MaxArtificialHealth = player.MaxArtificialHealth,
-                    RoleID = player.RoleID,
-                    RoleType = (int)player.RoleType,
-                    UserId = player.UserId,
-                    SynapseGroup = player.SynapseGroup.Parse(),
-                    DoNotTrack = player.DoNotTrack,
-                    IPAddress = player.DoNotTrack ? string.Empty : player.IpAddress
-                };
+                simplePlayer = player.Parse();
             }
             catch (Exception e)
             {
                 Synapse.Api.Logger.Get.Error($"{e}");
                 simplePlayer = null;
+                return false;
+            }
+            return true;
+        }
+
+        public static SimpleRoundSummary GetSimpleRoundSummary(int totalKills)
+        {
+            return new SimpleRoundSummary()
+            {
+                RoundTime = RoundSummary.roundTime,
+                TotalEscapedDClass = RoundSummary.escaped_ds,
+                TotalEscapedScientists = RoundSummary.escaped_scientists,
+                TotalKills = totalKills,
+                TotalKillsByFragGrenade = RoundSummary.kills_by_frag,
+                TotalKillsByScps = RoundSummary.kills_by_scp,
+                TurnedIntoZombies = RoundSummary.changed_into_zombies
+            };
+        }
+
+        public static RoundEnd Parse(this SimpleRoundSummary ev)
+        {
+            return new RoundEnd()
+            {
+                SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                RoundSummary = ev
+            };
+        }
+        public static bool TryParse(this SimpleRoundSummary ev, out RoundEnd roundEnd)
+        {
+            try
+            {
+                roundEnd = new RoundEnd()
+                {
+                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    RoundSummary = ev,
+                    Time = DateTime.Now
+                };
+            }
+            catch (Exception e)
+            {
+                Synapse.Api.Logger.Get.Error($"{e}");
+                roundEnd = null;
                 return false;
             }
             return true;
@@ -122,7 +204,7 @@ namespace SyncordPlugin.Syncord
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
                 SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
                 Identifier = "leave",
-                Player = ev.Player.Parse(),
+                Player = ev.Player.Parse(true),
                 Time = DateTime.Now
             };
         }
@@ -135,7 +217,7 @@ namespace SyncordPlugin.Syncord
                     SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
                     SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
                     Identifier = "leave",
-                    Player = ev.Player.Parse(),
+                    Player = ev.Player.Parse(true),
                     Time = DateTime.Now
                 };
             }
@@ -148,40 +230,73 @@ namespace SyncordPlugin.Syncord
             return true;
         }
 
-        public static PlayerReport Parse(this PlayerReportEventArgs ev)
+        public static PlayerDeath Parse(this PlayerDeathEventArgs ev)
         {
-            return new PlayerReport()
+            return new PlayerDeath()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
                 SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
-                Allow = ev.Allow,
-                GlobalReport = ev.GlobalReport,
-                Reason = ev.Reason,
-                Reporter = ev.Reporter.Parse(),
-                Target = ev.Target.Parse(),
+                HitInfo = ev.HitInfo.Parse(),
+                Killer = ev.Killer.Parse(),
+                Victim = ev.Victim.Parse(),
                 Time = DateTime.Now
             };
         }
-        public static bool TryParse(this PlayerReportEventArgs ev, out PlayerReport left)
+        public static bool TryParse(this PlayerDeathEventArgs ev, out PlayerDeath death)
         {
             try
             {
-                left = new PlayerReport()
+                death = new PlayerDeath()
                 {
                     SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
                     SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
-                    Allow = ev.Allow,
-                    GlobalReport = ev.GlobalReport,
-                    Reason = ev.Reason,
-                    Reporter = ev.Reporter.Parse(),
-                    Target = ev.Target.Parse(),
+                    Killer = ev.Killer.Parse(),
+                    Victim = ev.Victim.Parse(),
+                    HitInfo = ev.HitInfo.Parse(),
                     Time = DateTime.Now
                 };
             }
             catch (Exception e)
             {
                 Synapse.Api.Logger.Get.Error($"{e}");
-                left = null;
+                death = null;
+                return false;
+            }
+            return true;
+        }
+
+        public static PlayerBan Parse(this PlayerBanEventArgs ev)
+        {
+            return new PlayerBan()
+            {
+                SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                Time = DateTime.Now,
+                BannedPlayer = ev.BannedPlayer.Parse(),
+                BanningPlayer = ev.Issuer.Parse(),
+                Duration = ev.Duration,
+                Reason = ev.Reason
+            };
+        }
+        public static bool TryParse(this PlayerBanEventArgs ev, out PlayerBan ban)
+        {
+            try
+            {
+                ban = new PlayerBan()
+                {
+                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    Time = DateTime.Now,
+                    BannedPlayer = ev.BannedPlayer.Parse(),
+                    BanningPlayer = ev.Issuer.Parse(),
+                    Duration = ev.Duration,
+                    Reason = ev.Reason
+                };
+            }
+            catch (Exception e)
+            {
+                Synapse.Api.Logger.Get.Error($"{e}");
+                ban = null;
                 return false;
             }
             return true;
