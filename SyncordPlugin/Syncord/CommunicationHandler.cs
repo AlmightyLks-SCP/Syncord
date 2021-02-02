@@ -34,8 +34,8 @@ namespace SyncordPlugin.Syncord
                     continue;
                 if (IPAddress.TryParse(SyncordPlugin.Config.DiscordBotAddress, out IPAddress botAddress))
                     EasyClient.ConnectToHost(botAddress, SyncordPlugin.Config.DiscordBotPort);
-                if (SyncordPlugin.Config.DebugMode)
-                    Logger.Get.Info($"Reconnected: {EasyClient.ClientConnected}");
+                if (SyncordPlugin.Config.DebugMode && EasyClient.ClientConnected)
+                    Logger.Get.Info($"Reconnected");
             }
         }
 

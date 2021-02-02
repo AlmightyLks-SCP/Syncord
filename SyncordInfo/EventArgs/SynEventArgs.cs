@@ -11,6 +11,7 @@ namespace SyncordInfo.EventArgs
     [ProtoInclude(1001, typeof(PlayerJoinLeave))]
     [ProtoInclude(1002, typeof(RoundEnd))]
     [ProtoInclude(1003, typeof(PlayerDeath))]
+    [ProtoInclude(1004, typeof(PlayerBan))]
     public class SynEventArgs
     {
         [ProtoMember(1)]

@@ -34,6 +34,12 @@ namespace SyncordPlugin.EventHandler
             => _playerDeathCount = 0;
         private void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
         {
+            var dmgType = ev.HitInfo.GetDamageType();
+            if (dmgType.name.ToLower() == "wall" || dmgType.name.ToLower() == "none")
+                return;
+            if (ev.Victim == null || ev.Killer == null)
+                return;
+
             _playerDeathCount++;
             MakeAndSendData(ev);
         }
@@ -76,6 +82,17 @@ namespace SyncordPlugin.EventHandler
                         return;
                     if (leave.TryParse(out PlayerJoinLeave leftArgs))
                     {
+                        //SL / Synapse Bug, name sometimes appears as empty
+                        if (string.IsNullOrWhiteSpace(leftArgs.Player.Nickname))
+                        {
+                            //Try again after a second
+                            Timing.CallDelayed(1f, () =>
+                            {
+                                //Return if parsing failed this time / Nickname is still empty
+                                if(!leave.TryParse(out PlayerJoinLeave reattemptleftArgs) || string.IsNullOrWhiteSpace(leftArgs.Player.Nickname))
+                                    return;
+                            });
+                        }
                         var status = CommunicationHandler.EasyClient.QueueData(leftArgs, DataType.ProtoBuf);
                         if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
                             Logger.Get.Warn($"PlayerLeaveEventArgs QueueStatus: {status}");

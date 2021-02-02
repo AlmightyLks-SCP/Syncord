@@ -15,7 +15,7 @@ namespace SyncordBot.SyncordCommunication
             var embedBuilder = new DiscordEmbedBuilder();
 
             embedBuilder.Title = ev[0].Identifier == "join" ? "Player Join" : "Player Leave";
-            embedBuilder.Color = DiscordColor.Green;
+            embedBuilder.Color = ev[0].Identifier == "join" ? DiscordColor.Green : DiscordColor.IndianRed;
             foreach (var joinedArgs in ev)
             {
                 var strBuilder = new StringBuilder();
@@ -46,7 +46,7 @@ namespace SyncordBot.SyncordCommunication
             var embedBuilder = new DiscordEmbedBuilder();
 
             embedBuilder.Title = "Player Death";
-            embedBuilder.Color = DiscordColor.DarkRed;
+            embedBuilder.Color = DiscordColor.Red;
             foreach (var playerDeath in ev)
             {
                 var damageType = playerDeath.HitInfo.DamageType;
@@ -132,10 +132,10 @@ namespace SyncordBot.SyncordCommunication
             {
                 embedBuilder.AddField($"{playerBan.BanningPlayer.Nickname} ({playerBan.BanningPlayer.UserId})",
                     $"Banned: {playerBan.BannedPlayer.Nickname}\n{playerBan.BannedPlayer.UserId}\nReason: {playerBan.Reason}\n" +
-                    $"Duration: {playerBan.Duration / 60} Minutes | " +
-                    $"{playerBan.Duration / 60 / 60} Hours | " +
-                    $"{playerBan.Duration / 60 / 60 / 24} Days | " +
-                    $"{playerBan.Duration / 60 / 60 / 24 / 365} Years",
+                    $"Duration: {playerBan.Duration / 60} Minute(s) | " +
+                    $"{playerBan.Duration / 60 / 60} Hour(s) | " +
+                    $"{playerBan.Duration / 60 / 60 / 24} Day(s) | " +
+                    $"{playerBan.Duration / 60 / 60 / 24 / 365} Year(s)",
                     true);
 
                 embedBuilder.WithFooter($"Server: {playerBan.SLFullAddress}");
