@@ -7,7 +7,7 @@ Syncord is there to offer you a way of logging specific Events from within your 
 Special thanks to [GrafDimenzio](https://github.com/GrafDimenzio) for persistently & patiently helping me out with making good use of the [Synapse-API](https://github.com/SynapseSL/Synapse/). 😄
 
 Another thanks to [Exiled's DI](https://github.com/galaxy119/DiscordIntegration/). Why?  
-I was a noob at networking in programming before this project. I first looked at DI's implementations, getting my hands on using network traffic myself and learned a lot.  
+I was a noob at networking in programming before this project. I first looked at DI's implementations, getting my hands on using network trafficing myself and learned a lot.  
 However, these influences and inspirations in my code have been overhauled, removing a lot of associations, quirks and more importantly, making it more of my own creation.  
 
 ---
