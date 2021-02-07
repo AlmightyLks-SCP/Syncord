@@ -7,7 +7,7 @@ Syncord is there to offer you a way of logging specific Events from within your 
 Special thanks to [GrafDimenzio](https://github.com/GrafDimenzio) for persistently & patiently helping me out with making good use of the [Synapse-API](https://github.com/SynapseSL/Synapse/). 😄
 
 Another thanks to [Exiled's DI](https://github.com/galaxy119/DiscordIntegration/). Why?  
-I was a noob at networking in programming before this project. I first looked at DI's implementations, learned a lot.  
+I was a noob at networking in programming before this project. I first looked at DI's implementations, getting my hands on using network traffic myself and learned a lot.  
 However, these influences and inspirations in my code have been overhauled, removing a lot of associations, quirks and more importantly, making it more of my own creation.  
 
 ---
@@ -40,7 +40,7 @@ Name  | Version
 `Synapse` | 2.4.2 
 `Newtonsoft.Json` | 12.0.3 
 
-## [Configs]()
+## [Configs](Configs.md)
 
 This deserves its own dedicated documentation. Please follow the link in the headline.
 
@@ -50,22 +50,26 @@ This deserves its own dedicated documentation. Please follow the link in the hea
 
 Download the files from the [Latest Release](https://github.com/AlmightyLks/Syncord/releases).  
 The Bot only has to be unpacked and stay within its own folder (For your own good, and to make sure of the file integrity).  
-It doesn't matter where you put the Bot-Folder, it only has to be on the same system.  
-You need to have the `.NET Core 3.1 Runtime` installed.  
-For Windows you can easily find it [here](https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.404-windows-x64-installer).  
-For Linux you can find it [here](https://docs.microsoft.com/en-gb/dotnet/core/install/linux).
+It doesn't matter where you put the Bot-Folder.  
 
-For the Server-sided things... You move the `SyncordInfo.dll`, `System.Data.dll`\*, `DSharpPlus.dll`\* & the `Newtonsoft.Json.dll`\*, which are uploaded, into your Synapse\dependencies folder.  
+For the SL server-sided things... 
+You move the dependencies\*, which are uploaded, into your Synapse-dependencies folder.  
 After that, you simply move the `SyncordPlugin.dll` into your Server's plugin folder. Done!
 
 ---
 
 ## How to use
 
-Using the `syncord.reconnect` permission and either the `Remote Admin Console` or the `Server Console`, you type `syncord connect` in order to connect to the local Syncord Bot.   
-After that, you do not have to worry and you can leave the work to the Plugin and the Bot!
+The Syncord Plugin has 1 command, with 2 subcommands.  
+All of these require the permission `syncord.reconnect`.  
 
+Command Name  | Description 
+------------ | ------------ 
+`syncord` | Check whether Syncord is currently connected to a Bot.
+`syncord connect` | Connect Syncord with the Bot mentioned in the configs.
+`syncord disconnect` | Disconnect Syncord from the Bot.
 
+Available in  `Remote Admin Console` and the `Server Console`
 
 \* Note  
-These files can be found in the dedicated Plugin-Channel within the [Synapse Discord](https://discord.gg/HWW6s8ggxT).
+These can be found in the dedicated Plugin-Channel within the [Synapse Discord](https://discord.gg/HWW6s8ggxT).
