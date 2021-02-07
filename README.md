@@ -3,30 +3,42 @@
 ## Description
 
 Syncord is there to offer you a way of logging specific Events from within your SCP SL Server to your Discord Server.  
-To make it short, Syncord supports:  
-- Logging Events from multiple SL-Servers to one Discord-Server.
-- Logging Events from one SL-Server to multiple Discord-Servers.
-- Logging multiple Events into the same channel.
-
-What Syncord doesn't support (yet):
-- Logging SL-Server Events from a remote machine. (Bot & Server/s have to be on the same machine.)
 
 Special thanks to [GrafDimenzio](https://github.com/GrafDimenzio) for persistently & patiently helping me out with making good use of the [Synapse-API](https://github.com/SynapseSL/Synapse/). 😄
 
----
-## Resources used / Versions used
+Another thanks to [Exiled's DI](https://github.com/galaxy119/DiscordIntegration/). Why?  
+I was a noob at networking in programming before this project. I first looked at DI's implementations, learned a lot.  
+However, these influences and inspirations in my code have been overhauled, removing a lot of associations, quirks and more importantly, making it more of my own creation.  
 
-### SyncordBot:  
-  - .NET Core       3.1  
-  - DSharpPlus      3.2.3
-  - Newtonsoft      12.0.3
-### SyncordInfo:  
-  - .NET Framework  4.7.2
-### SyncordPlugin:  
-  - .NET Framework  4.7.2
-  - Synapse         2.2.0
-  - Newtonsoft      10.0.3
-  - DSharpPlus      3.2.3
+---
+## Dependencies
+
+### Syncord Bot
+Name  | Version 
+------------ | ------------ 
+`.NET (Core)` | 5 
+`DSharpPlus` | 4.0.0-rc1 
+`DSharpPlus.CommandsNext` | 4.0.0-rc1  
+`DSharpPlus.Interactivity` | 4.0.0-rc1  
+`Serilog` | 2.10.0 
+`Serilog.Sinks.Console` | 3.1.1 
+`Serilog.Sinks.File` | 4.1.0 
+`protobuf-net` | 3.0.73 
+`Newtonsoft` | 12.0.3 
+
+### Syncord Info
+Name  | Version 
+------------ | ------------ 
+`.NET Framework` | 4.7.2 
+`protobuf-net` | 3.0.73 
+`protobuf-net.Core` | 3.0.73
+
+### Syncord Plugin
+Name  | Version 
+------------ | ------------ 
+`.NET Framework` | 4.7.2 
+`Synapse` | 2.4.2 
+`Newtonsoft.Json` | 12.0.3 
   
 ---
 ## Configs
