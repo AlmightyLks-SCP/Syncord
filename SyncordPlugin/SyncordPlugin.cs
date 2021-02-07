@@ -1,7 +1,7 @@
 ﻿/*
     The following license applies to the entirety of this Repository and Solution.
     
-    TLDR.: Don't use a damn thing from my work without crediting me, else I'll smite your arse.
+    
     
     Copyright 2021 AlmightyLks
 
@@ -31,8 +31,8 @@ namespace SyncordPlugin
         Description = "A way of connecting Discord with you SCP SL Server",
         Name = "SyncordPlugin",
         SynapseMajor = 2,
-        SynapseMinor = 2,
-        SynapsePatch = 0,
+        SynapseMinor = 4,
+        SynapsePatch = 2,
         Version = "0.9.1"
         )]
     public class SyncordPlugin : AbstractPlugin

@@ -1,7 +1,7 @@
 ﻿/*
     The following license applies to the entirety of this Repository and Solution.
     
-    TLDR.: Don't use a damn thing from my work without crediting me, else I'll smite your arse.
+    
     
     Copyright 2021 AlmightyLks
 
