@@ -1,4 +1,23 @@
-﻿using EasyCommunication.Host;
+﻿/*
+    The following license applies to the entirety of this Repository and Solution.
+    
+    TLDR.: Don't use a damn thing from my work without crediting me, else I'll smite your arse.
+    
+    Copyright 2021 AlmightyLks
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+    or implied. See the License for the specific language governing
+    permissions and limitations under the License.
+*/
+using EasyCommunication.Connection;
 using EasyCommunication.Helper;
 using Serilog;
 using System.Linq;
@@ -149,7 +168,7 @@ namespace SyncordBot.SyncordCommunication
             {
                 case DataType.ProtoBuf:
                     {
-                        if (!ev.Data.TryDeserialize(out SynEventArgs synEventArgs))
+                        if (!ev.Data.TryDeserializeProtoBuf(out SynEventArgs synEventArgs))
                             return;
                         //  If Bot & SL Server are on the same machine, make the identifier / key the localhost variant
                         //  Why? 
@@ -158,7 +177,7 @@ namespace SyncordBot.SyncordCommunication
                         //   while also having a dynamic ip - You don't have to re-type the IP every changing interval
                         string ipAddress = synEventArgs.SameMachine ? $"127.0.0.1:{synEventArgs.SLFullAddress.Split(':')[1]}" : synEventArgs.SLFullAddress;
 
-                        if (ev.Data.TryDeserialize(out PlayerJoinLeave joinLeave))
+                        if (ev.Data.TryDeserializeProtoBuf(out PlayerJoinLeave joinLeave) && joinLeave != null)
                         {
                             if (joinLeave.Identifier == "join")
                             {
@@ -167,7 +186,7 @@ namespace SyncordBot.SyncordCommunication
                                 var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.PlayerJoinedQueue.ContainsKey(ipAddress));
                                 if (embedQueueElement == null)
                                 {
-                                    _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server");
+                                    _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {synEventArgs.SLFullAddress}");
                                     return;
                                 }
                                 Queue<PlayerJoinLeave> joinQueue = embedQueueElement.PlayerJoinedQueue[ipAddress];
@@ -196,14 +215,14 @@ namespace SyncordBot.SyncordCommunication
                                 joinQueue.Enqueue(joinLeave);
                             }
                         }
-                        else if (ev.Data.TryDeserialize(out RoundEnd roundEnd))
+                        else if (ev.Data.TryDeserializeProtoBuf(out RoundEnd roundEnd) && roundEnd != null)
                         {
                             Debug.WriteLine($"Round ended for {roundEnd.SLFullAddress}!");
 
                             var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.RoundEndQueue.ContainsKey(ipAddress));
                             if (embedQueueElement == null)
                             {
-                                _logger.Warning($"ReceivedDataFromSLServer: Received round end data from unconfigured SL Server");
+                                _logger.Warning($"ReceivedDataFromSLServer: Received round end data from unconfigured SL Server: {synEventArgs.SLFullAddress}");
                                 return;
                             }
 
@@ -216,14 +235,14 @@ namespace SyncordBot.SyncordCommunication
 
                             roundEndQueue.Enqueue(roundEnd);
                         }
-                        else if (ev.Data.TryDeserialize(out PlayerDeath playerDeath))
+                        else if (ev.Data.TryDeserializeProtoBuf(out PlayerDeath playerDeath) && playerDeath != null)
                         {
                             Debug.WriteLine($"Player Death for {playerDeath.SLFullAddress}!");
 
                             var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.PlayerDeathQueue.ContainsKey(ipAddress));
                             if (embedQueueElement == null)
                             {
-                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server");
+                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {synEventArgs.SLFullAddress}");
                                 return;
                             }
 
@@ -236,14 +255,14 @@ namespace SyncordBot.SyncordCommunication
 
                             deathQueue.Enqueue(playerDeath);
                         }
-                        else if (ev.Data.TryDeserialize(out PlayerBan playerBan))
+                        else if (ev.Data.TryDeserializeProtoBuf(out PlayerBan playerBan) && playerBan != null)
                         {
                             Debug.WriteLine($"Player Death for {playerBan.SLFullAddress}!");
 
                             var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.PlayerBanQueue.ContainsKey(ipAddress));
                             if (embedQueueElement == null)
                             {
-                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server");
+                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {synEventArgs.SLFullAddress}");
                                 return;
                             }
 

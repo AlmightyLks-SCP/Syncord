@@ -1,4 +1,24 @@
-﻿using DSharpPlus.Entities;
+﻿/*
+    The following license applies to the entirety of this Repository and Solution.
+    
+    TLDR.: Don't use a damn thing from my work without crediting me, else I'll smite your arse.
+    
+    Copyright 2021 AlmightyLks
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+    or implied. See the License for the specific language governing
+    permissions and limitations under the License.
+*/
+using DSharpPlus.Entities;
+using SyncordBot.Models;
 using SyncordInfo.EventArgs;
 using System;
 using System.Collections.Generic;
@@ -12,9 +32,10 @@ namespace SyncordBot.SyncordCommunication
     {
         public static DiscordEmbed ToEmbed(this PlayerJoinLeave[] ev)
         {
+            Translation translation = Bot.Configs.TranslationConfig.Translation;
             var embedBuilder = new DiscordEmbedBuilder();
 
-            embedBuilder.Title = ev[0].Identifier == "join" ? "Player Join" : "Player Leave";
+            embedBuilder.Title = ev[0].Identifier == "join" ? translation.Elements["Player Join"] : translation.Elements["Player Leave"];
             embedBuilder.Color = ev[0].Identifier == "join" ? DiscordColor.Green : DiscordColor.IndianRed;
             foreach (var joinedArgs in ev)
             {
@@ -24,18 +45,18 @@ namespace SyncordBot.SyncordCommunication
                 if (Bot.Configs.EmbedConfigs.PlayerJoinedLeftConfig.ShowUserId)
                     strBuilder.AppendLine(joinedArgs.Player.UserId);
                 if (Bot.Configs.EmbedConfigs.PlayerJoinedLeftConfig.ShowPing)
-                    strBuilder.AppendLine($"{joinedArgs.Player.Ping} ms");
+                    strBuilder.AppendLine($"{joinedArgs.Player.Ping} {translation.Elements["ms"]}");
                 if (Bot.Configs.EmbedConfigs.PlayerJoinedLeftConfig.ShowIP)
                     strBuilder.AppendLine($"{(joinedArgs.Player.DoNotTrack ? "Do Not Track" : joinedArgs.Player.IPAddress)}");
 
                 strBuilder.AppendLine(joinedArgs.Time.ToLongTimeString());
                 strBuilder.AppendLine("```");
 
-                embedBuilder.AddField(joinedArgs.Player.Nickname,
+                embedBuilder.AddField(string.IsNullOrWhiteSpace(joinedArgs.Player.Nickname) ? "[Empty-Name]" : joinedArgs.Player.Nickname,
                     strBuilder.ToString(),
                     true);
 
-                embedBuilder.WithFooter($"Server: {joinedArgs.SLFullAddress}");
+                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {joinedArgs.SLFullAddress}");
             }
 
             return embedBuilder.Build();
@@ -43,9 +64,10 @@ namespace SyncordBot.SyncordCommunication
 
         public static DiscordEmbed ToEmbed(this PlayerDeath[] ev)
         {
+            Translation translation = Bot.Configs.TranslationConfig.Translation;
             var embedBuilder = new DiscordEmbedBuilder();
 
-            embedBuilder.Title = "Player Death";
+            embedBuilder.Title = translation.Elements["Player Death"];
             embedBuilder.Color = DiscordColor.Red;
             foreach (var playerDeath in ev)
             {
@@ -56,27 +78,27 @@ namespace SyncordBot.SyncordCommunication
 
                 if (Bot.Configs.EmbedConfigs.PlayerDeathConfig.ShowUserId)
                 {
-                    embedBuilder.AddField($"Killer",
+                    embedBuilder.AddField($"{translation.Elements["Killer"]}",
                         $"{killerRole}\n{playerDeath.Killer.DisplayName}\n{playerDeath.Killer.UserId}",
                         true);
-                    embedBuilder.AddField($"Victim:",
-                        $"{victimRole}\n{playerDeath.Victim.DisplayName}\n{playerDeath.Victim.UserId}\nWas {(playerDeath.Victim.IsCuffed ? "" : "not ")}Cuffed"
+                    embedBuilder.AddField($"{translation.Elements["Victim"]}",
+                        $"{victimRole}\n{playerDeath.Victim.DisplayName}\n{playerDeath.Victim.UserId}\n{(playerDeath.Victim.IsCuffed ? translation.Elements["Was Cuffed"] : translation.Elements["Was not Cuffed"])}"
                         , true);
                 }
                 else
                 {
-                    embedBuilder.AddField($"Killer",
+                    embedBuilder.AddField($"{translation.Elements["Killer"]}",
                         $"{killerRole}\n{playerDeath.Killer.DisplayName}",
                         true);
-                    embedBuilder.AddField($"Victim:",
-                        $"{victimRole}\n{playerDeath.Victim.DisplayName}\nWas {(playerDeath.Victim.IsCuffed ? "" : "not ")}Cuffed"
+                    embedBuilder.AddField($"{translation.Elements["Victim"]}",
+                        $"{victimRole}\n{playerDeath.Victim.DisplayName}\n{(playerDeath.Victim.IsCuffed ? translation.Elements["Was Cuffed"] : translation.Elements["Was not Cuffed"])}"
                         , true);
                 }
-                embedBuilder.AddField($"Weapon:",
+                embedBuilder.AddField($"{translation.Elements["Weapon"]}:",
                     $"{damageType.Name}",
                     true);
 
-                embedBuilder.WithFooter($"Server: {playerDeath.SLFullAddress}");
+                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {playerDeath.SLFullAddress}");
                 embedBuilder.Timestamp = playerDeath.Time;
             }
 
@@ -85,38 +107,39 @@ namespace SyncordBot.SyncordCommunication
 
         public static DiscordEmbed ToEmbed(this RoundEnd ev)
         {
+            Translation translation = Bot.Configs.TranslationConfig.Translation;
             var embedBuilder = new DiscordEmbedBuilder();
 
-            embedBuilder.Title = "Round Summary";
+            embedBuilder.Title = translation.Elements["Round Summary"];
             embedBuilder.Color = DiscordColor.Gold;
 
             if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowRoundLength)
-                embedBuilder.AddField("Round Length",
+                embedBuilder.AddField($"{translation.Elements["Round Length"]}",
                     TimeSpan.FromSeconds(ev.RoundSummary.RoundTime).ToString(),
                     false);
             if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalKills)
-                embedBuilder.AddField("Total Kills",
+                embedBuilder.AddField($"{translation.Elements["Total Kills"]}",
                 ev.RoundSummary.TotalKills.ToString(),
                 true);
             if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalScpKills)
-                embedBuilder.AddField("Kills By SCPs",
+                embedBuilder.AddField($"{translation.Elements["Kills By SCPs"]}",
                 ev.RoundSummary.TotalKillsByScps.ToString(),
                 true);
             if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalFragGrenadeKills)
-                embedBuilder.AddField("Kills By Frag Grenades",
+                embedBuilder.AddField($"{translation.Elements["Kills By Frag Grenades"]}",
                 ev.RoundSummary.TotalKillsByFragGrenade.ToString(),
                 true);
 
             if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalEscapedDClass)
-                embedBuilder.AddField("Escaped D-Class",
+                embedBuilder.AddField($"{translation.Elements["Escaped D-Class"]}",
                 ev.RoundSummary.TotalEscapedDClass.ToString(),
                 true);
             if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalEscapedScientists)
-                embedBuilder.AddField("Escaped Scientists",
+                embedBuilder.AddField($"{translation.Elements["Escaped Scientists"]}",
                 ev.RoundSummary.TotalEscapedScientists.ToString(),
                 true);
 
-            embedBuilder.WithFooter($"Server: {ev.SLFullAddress}");
+            embedBuilder.WithFooter($"{translation.Elements["Server"]}: {ev.SLFullAddress}");
             embedBuilder.Timestamp = ev.Time;
 
             return embedBuilder.Build();
@@ -124,21 +147,22 @@ namespace SyncordBot.SyncordCommunication
 
         public static DiscordEmbed ToEmbed(this PlayerBan[] ev)
         {
+            Translation translation = Bot.Configs.TranslationConfig.Translation;
             var embedBuilder = new DiscordEmbedBuilder();
 
-            embedBuilder.Title = "Player Ban";
+            embedBuilder.Title = translation.Elements["Player Ban"];
             embedBuilder.Color = DiscordColor.DarkRed;
             foreach (var playerBan in ev)
             {
                 embedBuilder.AddField($"{playerBan.BanningPlayer.Nickname} ({playerBan.BanningPlayer.UserId})",
-                    $"Banned: {playerBan.BannedPlayer.Nickname}\n{playerBan.BannedPlayer.UserId}\nReason: {playerBan.Reason}\n" +
-                    $"Duration: {playerBan.Duration / 60} Minute(s) | " +
-                    $"{playerBan.Duration / 60 / 60} Hour(s) | " +
-                    $"{playerBan.Duration / 60 / 60 / 24} Day(s) | " +
-                    $"{playerBan.Duration / 60 / 60 / 24 / 365} Year(s)",
+                    $"{translation.Elements["Banned"]}: {playerBan.BannedPlayer.Nickname}\n{playerBan.BannedPlayer.UserId}\n{translation.Elements["Reason"]}: {playerBan.Reason}\n" +
+                    $"{translation.Elements["Duration"]}: {playerBan.Duration / 60} {translation.Elements["Minutes"]} | " +
+                    $"{playerBan.Duration / 60 / 60} {translation.Elements["Hours"]} | " +
+                    $"{playerBan.Duration / 60 / 60 / 24} {translation.Elements["Days"]} | " +
+                    $"{playerBan.Duration / 60 / 60 / 24 / 365} {translation.Elements["Years"]}",
                     true);
 
-                embedBuilder.WithFooter($"Server: {playerBan.SLFullAddress}");
+                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {playerBan.SLFullAddress}");
                 embedBuilder.Timestamp = playerBan.Time;
             }
 

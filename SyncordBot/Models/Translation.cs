@@ -17,20 +17,22 @@
     or implied. See the License for the specific language governing
     permissions and limitations under the License.
 */
-using ProtoBuf;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace SyncordInfo.SimplifiedTypes
+namespace SyncordBot.Models
 {
-    [ProtoContract]
-    public struct SimpleDamageType
+    public class Translation
     {
-        [ProtoMember(1)]
-        public string Name { get; set; }
-        [ProtoMember(2)]
-        public bool IsWeapon { get; set; }
-        [ProtoMember(3)]
-        public bool IsScp { get; set; }
-        [ProtoMember(4)]
-        public int WeaponId { get; set; }
+        public string Language { get; set; }
+        public Dictionary<string, string> Elements { get; set; }
+        public Translation()
+        {
+            Language = "Unknown";
+            Elements = new Dictionary<string, string>();
+        }
     }
 }

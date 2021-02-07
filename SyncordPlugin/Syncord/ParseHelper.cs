@@ -1,4 +1,24 @@
-﻿using Synapse;
+﻿/*
+    The following license applies to the entirety of this Repository and Solution.
+    
+    TLDR.: Don't use a damn thing from my work without crediting me, else I'll smite your arse.
+    
+    Copyright 2021 AlmightyLks
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+    or implied. See the License for the specific language governing
+    permissions and limitations under the License.
+*/
+using Mirror.LiteNetLib4Mirror;
+using Synapse;
 using Synapse.Api;
 using Synapse.Api.Events.SynapseEventArguments;
 using Synapse.Api.Roles;
@@ -6,6 +26,7 @@ using Synapse.Permission;
 using SyncordInfo.EventArgs;
 using SyncordInfo.SimplifiedTypes;
 using System;
+using System.Net.Http;
 using UnityEngine;
 
 namespace SyncordPlugin.Syncord
@@ -139,7 +160,7 @@ namespace SyncordPlugin.Syncord
             return new RoundEnd()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                 RoundSummary = ev
             };
         }
@@ -150,7 +171,7 @@ namespace SyncordPlugin.Syncord
                 roundEnd = new RoundEnd()
                 {
                     SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                     RoundSummary = ev,
                     Time = DateTime.Now
                 };
@@ -169,7 +190,7 @@ namespace SyncordPlugin.Syncord
             return new PlayerJoinLeave()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                 Identifier = "join",
                 Player = ev.Player.Parse(),
                 Time = DateTime.Now
@@ -182,7 +203,8 @@ namespace SyncordPlugin.Syncord
                 joined = new PlayerJoinLeave()
                 {
                     SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    //SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
+                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                     Identifier = "join",
                     Player = ev.Player.Parse(),
                     Time = DateTime.Now
@@ -202,7 +224,7 @@ namespace SyncordPlugin.Syncord
             return new PlayerJoinLeave()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                 Identifier = "leave",
                 Player = ev.Player.Parse(true),
                 Time = DateTime.Now
@@ -215,7 +237,7 @@ namespace SyncordPlugin.Syncord
                 left = new PlayerJoinLeave()
                 {
                     SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                     Identifier = "leave",
                     Player = ev.Player.Parse(true),
                     Time = DateTime.Now
@@ -235,7 +257,7 @@ namespace SyncordPlugin.Syncord
             return new PlayerDeath()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                 HitInfo = ev.HitInfo.Parse(),
                 Killer = ev.Killer.Parse(),
                 Victim = ev.Victim.Parse(),
@@ -249,7 +271,7 @@ namespace SyncordPlugin.Syncord
                 death = new PlayerDeath()
                 {
                     SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                     Killer = ev.Killer.Parse(),
                     Victim = ev.Victim.Parse(),
                     HitInfo = ev.HitInfo.Parse(),
@@ -270,7 +292,7 @@ namespace SyncordPlugin.Syncord
             return new PlayerBan()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                 Time = DateTime.Now,
                 BannedPlayer = ev.BannedPlayer.Parse(),
                 BanningPlayer = ev.Issuer.Parse(),
@@ -285,7 +307,7 @@ namespace SyncordPlugin.Syncord
                 ban = new PlayerBan()
                 {
                     SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    SLFullAddress = $"{CustomNetworkManager.Ip}:{Server.Get.Port}",
+                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
                     Time = DateTime.Now,
                     BannedPlayer = ev.BannedPlayer.Parse(),
                     BanningPlayer = ev.Issuer.Parse(),

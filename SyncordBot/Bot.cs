@@ -1,4 +1,23 @@
-﻿using DSharpPlus;
+﻿/*
+    The following license applies to the entirety of this Repository and Solution.
+    
+    TLDR.: Don't use a damn thing from my work without crediting me, else I'll smite your arse.
+    
+    Copyright 2021 AlmightyLks
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+    or implied. See the License for the specific language governing
+    permissions and limitations under the License.
+*/
+using DSharpPlus;
 using SyncordBot.Configs.BotConfigs;
 using System.IO;
 using System.Threading.Tasks;
@@ -9,7 +28,7 @@ using DSharpPlus.CommandsNext;
 using Microsoft.Extensions.DependencyInjection;
 using SyncordBot.Models;
 using System.Net;
-using EasyCommunication.Host;
+using EasyCommunication.Connection;
 using Serilog;
 using SyncordBot.SyncordCommunication;
 
@@ -26,6 +45,7 @@ namespace SyncordBot
 
         private IServiceProvider _service;
         private ILogger _logger;
+        private Random random;
 
         //Entry-point
         static void Main()
@@ -33,6 +53,10 @@ namespace SyncordBot
 
         private async Task MainAsync()
         {
+            Console.Title = "Syncord";
+
+            random = new Random();
+
             //Load Discord Bot Configs
             LoadConfigs();
 
@@ -44,8 +68,10 @@ namespace SyncordBot
                 rollOnFileSizeLimit: true)
                 .CreateLogger();
 
+            _logger.Information($"Loaded Translation: {Configs.TranslationConfig.Translation.Language}.");
+
             //Instantiate EasyHost
-            EasyHost = new EasyHost(2500, Configs.Port, IPAddress.Any)
+            EasyHost = new EasyHost(5000, Configs.Port, IPAddress.Any)
             {
                 BufferSize = 2048
             };
@@ -95,9 +121,9 @@ namespace SyncordBot
 
             //Register Command
             //Commands.RegisterCommands<ServerStatsCommand>();
-            
+
             //Fire and forget
-            UpdatePresence();
+            new Task(async () => await UpdatePresence()).Start();
 
             await Task.Delay(-1);
         }
@@ -107,7 +133,10 @@ namespace SyncordBot
             {
                 try
                 {
-                    await Task.Delay(22500);
+                    //  Presence updates have a ratelimit of ~5 times every 60 seconds, 20 seconds being the quickest you may update your presence.
+                    //  Additionally, it is not well-accepted to be spamming the API every exact X seconds.
+                    //  I will not edge the limits, so it's 21 seconds min and a safe 26.5 seconds max
+                    await Task.Delay(random.Next(21000, 26500));
                     await Client.UpdateStatusAsync(new DiscordActivity()
                     {
                         ActivityType = Configs.DiscordActivity.Activity,
