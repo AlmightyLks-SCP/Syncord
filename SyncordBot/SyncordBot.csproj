@@ -6,6 +6,10 @@
     <PackageIcon>Syncord.png</PackageIcon>
     <Version>0.9.1</Version>
     <ApplicationIcon>Syncord.ico</ApplicationIcon>
+    <PackageProjectUrl>https://github.com/AlmightyLks/Syncord</PackageProjectUrl>
+    <Copyright>Copyright © AlmightyLks 2021</Copyright>
+    <Company>AlmightyLks</Company>
+    <RepositoryUrl>https://github.com/AlmightyLks/Syncord</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
