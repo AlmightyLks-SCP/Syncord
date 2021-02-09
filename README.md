@@ -50,6 +50,7 @@ This deserves its own dedicated documentation. Please follow the link in the hea
 
 Download the files from the [Latest Release](https://github.com/AlmightyLks/Syncord/releases).  
 The Bot only has to be unpacked and stay within its own folder (For your own good, and to make sure of the file integrity).  
+You do **not** have to install an additional runtime environment, hence the bot's size.  
 It doesn't matter where you put the Bot-Folder.  
 
 For the SL server-sided things... 
