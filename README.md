@@ -37,7 +37,7 @@ Name  | Version
 Name  | Version 
 ------------ | ------------ 
 `.NET Framework` | 4.7.2 
-`Synapse` | 2.4.2 
+`Synapse` | 2.5.0 
 `Newtonsoft.Json` | 12.0.3 
 
 ## [Configs](Configs.md)
