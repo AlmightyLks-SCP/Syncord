@@ -109,7 +109,7 @@ Which could look something like this in completion:
     "Guilds": [
         {
             "GuildID": 727996170051518504,
-            "ServerPort": 8888,
+            "SLFullAddress": "127.0.0.1:8888",
             "DedicatedChannels": {
                 "PlayerJoin": 804830959513239583,
                 "PlayerLeave": 804830959513239583,
@@ -120,14 +120,14 @@ Which could look something like this in completion:
         },
         {
             "GuildID": 727610880816316536,
-            "ServerPort": 8888,
+            "SLFullAddress": "127.0.0.1:8888",
             "DedicatedChannels": {
                 "PlayerDeath": 727610980237836289
             }
         },
         {
             "GuildID": 727996170051518504,
-            "ServerPort": 7777,
+            "SLFullAddress": "127.0.0.1:7777",
             "DedicatedChannels": {
                 "PlayerDeath": 782245173526134814,
                 "PlayerJoin": 782687511428333598,
