@@ -22,12 +22,12 @@ namespace SyncordPlugin
         public static SyncordConfig Config { get; set; }
         public static string IPv4 { get; private set; }
 
-        private PluginEventHandler handler;
+        internal PluginEventHandler EventHandler { get; set; }
 
         public override void Load()
         {
             IPv4 = GetIPv4().Result;
-            handler = new PluginEventHandler();
+            EventHandler = new PluginEventHandler();
         }
 
         private static async Task<string> GetIPv4()

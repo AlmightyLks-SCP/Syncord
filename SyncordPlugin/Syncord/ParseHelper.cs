@@ -70,7 +70,7 @@ namespace SyncordPlugin.Syncord
             return new SimpleCustomRole()
             {
                 Role = (role.GetRoleName(), role.GetRoleID()),
-                Team = (role.GetTeam().ToString(), (byte)role.GetTeam())
+                Team = (Server.Get.TeamManager.GetTeam(role.GetTeamID()).Info.Name, role.GetTeamID())
             };
         }
         public static bool TryParse(this IRole role, out SimpleCustomRole simpleCustomRole)

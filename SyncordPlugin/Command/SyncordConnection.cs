@@ -1,6 +1,8 @@
-﻿using Synapse.Command;
+﻿using EasyCommunication.Connection;
+using Synapse.Command;
 using SyncordPlugin.Syncord;
 using System;
+using System.Net;
 
 namespace SyncordPlugin.Command
 {
@@ -14,8 +16,14 @@ namespace SyncordPlugin.Command
         )]
     public class SyncordConnection : ISynapseCommand
     {
+        private SyncordPlugin _plugin;
+        public SyncordConnection(SyncordPlugin plugin)
+        {
+            _plugin = plugin;
+        }
         public CommandResult Execute(CommandContext context)
         {
+            EasyClient easyClient = _plugin.EventHandler.CommunicationHandler.EasyClient;
             var result = new CommandResult();
             try
             {
@@ -27,7 +35,7 @@ namespace SyncordPlugin.Command
                 }
                 if (context.Arguments.Count == 0 || context.Arguments.At(0).ToLower() != "connect" && context.Arguments.At(0).ToLower() != "disconnect")
                 {
-                    result.Message = $"Syncord Connected: {CommunicationHandler.Singleton.EasyClient.ClientConnected}";
+                    result.Message = $"Syncord Connected: {easyClient.ClientConnected}";
                     result.State = CommandResultState.Ok;
                     return result;
                 }
@@ -36,12 +44,25 @@ namespace SyncordPlugin.Command
                 {
                     case "connect":
                         {
-                            if (!CommunicationHandler.Singleton.EasyClient.ClientConnected)
+                            if (!easyClient.ClientConnected)
                             {
-                                var conRes = CommunicationHandler.ConnectToHost();
-                                SynapseController.Server.Logger.Warn((conRes && CommunicationHandler.Singleton.EasyClient.ClientConnected).ToString());
-                                result.Message = (conRes && CommunicationHandler.Singleton.EasyClient.ClientConnected) ? "Connection established" : $"Connection failed. Is the entered IP & Port ({SyncordPlugin.Config.DiscordBotAddress}:{SyncordPlugin.Config.DiscordBotPort}) valid?";
-                                result.State = (conRes && CommunicationHandler.Singleton.EasyClient.ClientConnected) ? CommandResultState.Ok : CommandResultState.Error;
+                                bool worked = true;
+                                try
+                                {
+                                    if (IPAddress.TryParse(SyncordPlugin.Config.DiscordBotAddress, out IPAddress botAddress))
+                                        easyClient.ConnectToHost(botAddress, SyncordPlugin.Config.DiscordBotPort);
+                                    else
+                                        worked = false;   //Invalid IP
+                                }
+                                catch
+                                {
+                                    worked = false;       //Invalid Host
+                                }
+                                SynapseController.Server.Logger.Warn((worked && easyClient.ClientConnected).ToString());
+                                result.Message = (worked && easyClient.ClientConnected) ? 
+                                    "Connection established" : 
+                                    $"Connection failed. Is the entered IP & Port ({SyncordPlugin.Config.DiscordBotAddress}:{SyncordPlugin.Config.DiscordBotPort}) valid?";
+                                result.State = (worked && easyClient.ClientConnected) ? CommandResultState.Ok : CommandResultState.Error;
                             }
                             else
                             {
@@ -52,9 +73,9 @@ namespace SyncordPlugin.Command
                         break;
                     case "disconnect":
                         {
-                            if (CommunicationHandler.Singleton.EasyClient.ClientConnected)
+                            if (easyClient.ClientConnected)
                             {
-                                CommunicationHandler.DisconnectFromHost();
+                                easyClient.DisconnectFromHost();
                                 result.Message = "Disconnected ";
                                 result.State = CommandResultState.Ok;
                             }

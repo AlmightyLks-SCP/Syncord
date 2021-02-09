@@ -10,12 +10,10 @@ namespace SyncordPlugin.Syncord
 {
     public class CommunicationHandler
     {
-        public static CommunicationHandler Singleton { get; private set; }
         public EasyClient EasyClient;
 
         public CommunicationHandler()
         {
-            Singleton = this;
             EasyClient = new EasyClient(3500)
             {
                 BufferSize = 2048
@@ -55,23 +53,5 @@ namespace SyncordPlugin.Syncord
             if (SyncordPlugin.Config.DebugMode)
                 Logger.Get.Warn("Connected to host");
         }
-
-        public static bool ConnectToHost()
-        {
-            try
-            {
-                if (IPAddress.TryParse(SyncordPlugin.Config.DiscordBotAddress, out IPAddress botAddress))
-                    Singleton.EasyClient.ConnectToHost(botAddress, SyncordPlugin.Config.DiscordBotPort);
-                else
-                    return false;   //Invalid IP
-            }
-            catch
-            {
-                return false;       //Invalid Host
-            }
-            return true;
-        }
-        public static void DisconnectFromHost()
-            => Singleton.EasyClient.DisconnectFromHost();
     }
 }
