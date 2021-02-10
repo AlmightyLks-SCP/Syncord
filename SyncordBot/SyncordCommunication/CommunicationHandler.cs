@@ -8,7 +8,7 @@ using EasyCommunication.Events.Host.EventArgs;
 using EasyCommunication.SharedTypes;
 using SyncordInfo.EventArgs;
 using System.Collections.Generic;
-using SyncordBot.Configs.BotConfigs;
+using SyncordBot.Configs.Types;
 using SyncordBot.Models;
 using System.Diagnostics;
 
@@ -37,7 +37,7 @@ namespace SyncordBot.SyncordCommunication
 
         public async Task CreateChannelEmbedQueues()
         {
-            foreach (DedicatedGuild dedicatedGuild in Bot.Configs.Guilds)
+            foreach (DedicatedGuild dedicatedGuild in Bot.GuildConfig.Guilds)
             {
                 if (dedicatedGuild == null)
                     continue;
@@ -71,66 +71,72 @@ namespace SyncordBot.SyncordCommunication
                                 DiscordChannel = channel
                             };
 
-                            if(dedicatedChannel.Key == EventTypes.PlayerJoin)
+                            switch (dedicatedChannel.Key)
                             {
-                                embedQueue.PlayerJoinedQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
-                                {
-                                    { dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>() }
-                                };
+                                case EventTypes.PlayerJoin:
+                                    {
+                                        embedQueue.PlayerJoinedQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
+                                        {
+                                            { dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>() }
+                                        };
+                                    }
+                                    break;
+                                case EventTypes.PlayerLeave:
+                                    {
+                                        embedQueue.PlayerLeftQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
+                                        {
+                                            { dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>() }
+                                        };
+                                    }
+                                    break;
+                                case EventTypes.RoundSummary:
+                                    {
+                                        embedQueue.RoundEndQueue = new Dictionary<string, Queue<RoundEnd>>()
+                                        {
+                                            { dedicatedGuild.SLFullAddress, new Queue<RoundEnd>() }
+                                        };
+                                    }
+                                    break;
+                                case EventTypes.PlayerDeath:
+                                    {
+                                        embedQueue.PlayerDeathQueue = new Dictionary<string, Queue<PlayerDeath>>()
+                                        {
+                                            { dedicatedGuild.SLFullAddress, new Queue<PlayerDeath>() }
+                                        };
+                                    }
+                                    break;
+                                case EventTypes.PlayerBan:
+                                    {
+                                        embedQueue.PlayerBanQueue = new Dictionary<string, Queue<PlayerBan>>()
+                                        {
+                                            { dedicatedGuild.SLFullAddress, new Queue<PlayerBan>() }
+                                        };
+                                    }
+                                    break;
                             }
-                            else if(dedicatedChannel.Key == EventTypes.PlayerLeave)
-                            {
-                                embedQueue.PlayerLeftQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
-                                {
-                                    { dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>() }
-                                };
-                            }
-                            else if(dedicatedChannel.Key == EventTypes.RoundSummary)
-                            {
-                                embedQueue.RoundEndQueue = new Dictionary<string, Queue<RoundEnd>>()
-                                {
-                                    { dedicatedGuild.SLFullAddress, new Queue<RoundEnd>() }
-                                };
-                            }
-                            else if(dedicatedChannel.Key == EventTypes.PlayerDeath)
-                            {
-                                embedQueue.PlayerDeathQueue = new Dictionary<string, Queue<PlayerDeath>>()
-                                {
-                                    { dedicatedGuild.SLFullAddress, new Queue<PlayerDeath>() }
-                                };
-                            }
-                            else if(dedicatedChannel.Key == EventTypes.PlayerBan)
-                            {
-                                embedQueue.PlayerBanQueue = new Dictionary<string, Queue<PlayerBan>>()
-                                {
-                                    { dedicatedGuild.SLFullAddress, new Queue<PlayerBan>() }
-                                };
-                            }
-                            
+
                             _embedQueues.Add(embedQueue);
                         }
                         //If there's an embed queue for this Discord Channel, add new queue entry depending on the event type
                         else
                         {
-                            if (dedicatedChannel.Key == EventTypes.PlayerJoin)
+                            switch (dedicatedChannel.Key)
                             {
-                                embedQueueElement.PlayerJoinedQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
-                            }
-                            else if (dedicatedChannel.Key == EventTypes.PlayerLeave)
-                            {
-                                embedQueueElement.PlayerLeftQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
-                            }
-                            else if (dedicatedChannel.Key == EventTypes.RoundSummary)
-                            {
-                                embedQueueElement.RoundEndQueue.Add(dedicatedGuild.SLFullAddress, new Queue<RoundEnd>());
-                            }
-                            else if (dedicatedChannel.Key == EventTypes.PlayerDeath)
-                            {
-                                embedQueueElement.PlayerDeathQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerDeath>());
-                            }
-                            else if (dedicatedChannel.Key == EventTypes.PlayerBan)
-                            {
-                                embedQueueElement.PlayerBanQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerBan>());
+                                case EventTypes.PlayerJoin:
+                                    embedQueueElement.PlayerJoinedQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
+                                    break;
+                                case EventTypes.PlayerLeave:
+                                    embedQueueElement.PlayerLeftQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
+                                    break;
+                                case EventTypes.RoundSummary:
+                                    embedQueueElement.RoundEndQueue.Add(dedicatedGuild.SLFullAddress, new Queue<RoundEnd>());
+                                    break;
+                                case EventTypes.PlayerDeath:
+                                    embedQueueElement.PlayerDeathQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerDeath>());
+                                    break;
+                                case EventTypes.PlayerBan:
+                                    embedQueueElement.PlayerBanQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerBan>());
+                                    break;
                             }
                         }
                         _logger.Information($"{dedicatedGuild.SLFullAddress} | Associated {dedicatedChannel.Key} with channel {channel.Name} ({channel.Id})");

@@ -1,6 +1,6 @@
 ﻿using DSharpPlus.Entities;
 
-namespace SyncordBot.Configs.BotConfigs
+namespace SyncordBot.Configs.Types
 {
     public struct DiscordActivityConfig
     {

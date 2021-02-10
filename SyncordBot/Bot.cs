@@ -1,5 +1,5 @@
 ﻿using DSharpPlus;
-using SyncordBot.Configs.BotConfigs;
+using SyncordBot.Configs.Types;
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -12,12 +12,17 @@ using System.Net;
 using EasyCommunication.Connection;
 using Serilog;
 using SyncordBot.SyncordCommunication;
+using SyncordBot.Configs;
 
 namespace SyncordBot
 {
     public class Bot
     {
-        public static Config Configs { get; set; }
+        public static BotConfig BotConfig { get; private set; }
+        public static TranslationConfig TranslationConfig { get; private set; }
+        public static GuildConfig GuildConfig { get; private set; }
+        public static AliasConfig AliasConfig { get; private set; }
+
         public DiscordClient Client { get; set; }
         public CommandsNextExtension Commands { get; set; }
         public ServerStats ServerStats { get; set; }
@@ -38,8 +43,6 @@ namespace SyncordBot
 
             random = new Random();
 
-            //Load Discord Bot Configs
-            LoadConfigs();
 
             //Instantiate Logger
             _logger = new LoggerConfiguration()
@@ -49,10 +52,13 @@ namespace SyncordBot
                 rollOnFileSizeLimit: true)
                 .CreateLogger();
 
-            _logger.Information($"Loaded Translation: {Configs.TranslationConfig.Translation.Language}.");
+            //Load Discord Bot Configs
+            LoadConfigs();
+
+            _logger.Information($"Loaded Translation: {TranslationConfig.Translation.Language}.");
 
             //Instantiate EasyHost
-            EasyHost = new EasyHost(5000, Configs.Port, IPAddress.Any)
+            EasyHost = new EasyHost(5000, BotConfig.Port, BotConfig.RemoteConnection ? IPAddress.Any : IPAddress.Loopback)
             {
                 BufferSize = 2048
             };
@@ -66,7 +72,7 @@ namespace SyncordBot
             //Create Discord Client
             Client = new DiscordClient(new DiscordConfiguration()
             {
-                Token = Configs.BotToken,
+                Token = BotConfig.BotToken,
                 TokenType = TokenType.Bot,
                 AutoReconnect = true,
                 MessageCacheSize = 0
@@ -90,7 +96,7 @@ namespace SyncordBot
             {
                 CaseSensitive = false,
                 EnableDefaultHelp = true,
-                StringPrefixes = new[] { Configs.Prefix },
+                StringPrefixes = new[] { BotConfig.Prefix },
                 IgnoreExtraArguments = true,
                 EnableMentionPrefix = false,
                 EnableDms = true,
@@ -120,8 +126,8 @@ namespace SyncordBot
                     await Task.Delay(random.Next(21000, 26500));
                     await Client.UpdateStatusAsync(new DiscordActivity()
                     {
-                        ActivityType = Configs.DiscordActivity.Activity,
-                        Name = Configs.DiscordActivity.Name.Replace("{SLCount}", EasyHost.ClientConnections.Count.ToString())
+                        ActivityType = BotConfig.DiscordActivity.Activity,
+                        Name = BotConfig.DiscordActivity.Name.Replace("{SLCount}", EasyHost.ClientConnections.Count.ToString())
                     });
                 }
                 catch (Exception e)
@@ -135,14 +141,18 @@ namespace SyncordBot
 
         private void LoadConfigs()
         {
-            Configs = new Config();
-
-            string configPath = Path.Combine(Directory.GetCurrentDirectory(), "Config.json");
-
-            if (!File.Exists(configPath))
-                File.WriteAllText(configPath, JsonConvert.SerializeObject(Configs));
-            else
-                Configs = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
+            try
+            {
+                BotConfig = BotConfig.Load();
+                GuildConfig = GuildConfig.Load();
+                TranslationConfig = TranslationConfig.Load();
+                AliasConfig = AliasConfig.Load();
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"Error loading config:\n{e}\n\nPress any key to continue");
+                Console.ReadKey();
+            }
         }
     }
 }

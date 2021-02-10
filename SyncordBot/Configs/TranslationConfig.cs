@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
-namespace SyncordBot.Configs.Translation
+namespace SyncordBot.Configs
 {
     public class TranslationConfig
     {
@@ -43,6 +42,23 @@ namespace SyncordBot.Configs.Translation
                     ["Escaped Scientists"] = "Escaped Scientists"
                 }
             };
+        }
+
+        public static TranslationConfig Load()
+        {
+            TranslationConfig result = new TranslationConfig();
+            string configDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Configs");
+            string configPath = Path.Combine(configDirectory, "Translation-Config.json");
+
+            if (!Directory.Exists(configDirectory))
+                Directory.CreateDirectory(configDirectory);
+
+            if (!File.Exists(configPath))
+                File.WriteAllText(configPath, JsonConvert.SerializeObject(result));
+            else
+                result = JsonConvert.DeserializeObject<TranslationConfig>(File.ReadAllText(configPath));
+
+            return result;
         }
     }
 }

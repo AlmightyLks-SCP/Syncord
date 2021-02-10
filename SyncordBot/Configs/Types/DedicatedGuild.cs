@@ -1,7 +1,7 @@
 ﻿using SyncordBot.Models;
 using System.Collections.Generic;
 
-namespace SyncordBot.Configs.BotConfigs
+namespace SyncordBot.Configs.Types
 {
     public class DedicatedGuild
     {
