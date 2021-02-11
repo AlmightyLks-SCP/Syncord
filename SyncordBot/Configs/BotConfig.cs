@@ -1,7 +1,7 @@
 ﻿using DSharpPlus.Entities;
 using Newtonsoft.Json;
 using SyncordBot.Configs.EmbedConfigs;
-using SyncordBot.Configs.Types;
+using SyncordBot.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,12 +10,12 @@ namespace SyncordBot.Configs
 {
     public sealed class BotConfig
     {
-        public string Prefix { get; set; }
-        public string BotToken { get; set; }
-        public ushort Port { get; set; }
-        public bool RemoteConnection { get; set; }
-        public DiscordActivityConfig DiscordActivity { get; set; }
-        public EmbedConfig EmbedConfigs { get; set; }
+        public string Prefix { get; init; }
+        public string BotToken { get; init; }
+        public ushort Port { get; init; }
+        public bool RemoteConnection { get; init; }
+        public DiscordActivityConfig DiscordActivity { get; init; }
+        public EmbedConfig EmbedConfigs { get; init; }
         public BotConfig()
         {
             Prefix = "!";

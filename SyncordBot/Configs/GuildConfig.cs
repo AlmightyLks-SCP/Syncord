@@ -1,17 +1,13 @@
 ﻿using Newtonsoft.Json;
-using SyncordBot.Configs.Types;
-using System;
+using SyncordBot.Models;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SyncordBot.Configs
 {
     public sealed class GuildConfig
     {
-        public List<DedicatedGuild> Guilds { get; set; }
+        public List<DedicatedGuild> Guilds { get; init; }
 
         public GuildConfig()
         {

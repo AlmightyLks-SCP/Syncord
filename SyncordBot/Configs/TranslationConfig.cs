@@ -7,7 +7,7 @@ namespace SyncordBot.Configs
 {
     public class TranslationConfig
     {
-        public Models.Translation Translation { get; set; }
+        public Models.Translation Translation { get; init; }
         public TranslationConfig()
         {
             Translation = new Models.Translation

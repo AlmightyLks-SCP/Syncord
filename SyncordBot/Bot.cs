@@ -1,5 +1,4 @@
 ﻿using DSharpPlus;
-using SyncordBot.Configs.Types;
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -25,7 +24,6 @@ namespace SyncordBot
 
         public DiscordClient Client { get; set; }
         public CommandsNextExtension Commands { get; set; }
-        public ServerStats ServerStats { get; set; }
         public EasyHost EasyHost { get; set; }
         public CommunicationHandler CommunicationHandler { get; set; }
 
@@ -42,7 +40,6 @@ namespace SyncordBot
             Console.Title = "Syncord";
 
             random = new Random();
-
 
             //Instantiate Logger
             _logger = new LoggerConfiguration()
@@ -65,9 +62,6 @@ namespace SyncordBot
 
             //Instatiate CommunicationHandler
             CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger);
-
-            //Instantiate ServerStats
-            ServerStats = new ServerStats();
 
             //Create Discord Client
             Client = new DiscordClient(new DiscordConfiguration()

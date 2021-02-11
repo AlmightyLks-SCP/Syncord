@@ -8,7 +8,6 @@ using EasyCommunication.Events.Host.EventArgs;
 using EasyCommunication.SharedTypes;
 using SyncordInfo.EventArgs;
 using System.Collections.Generic;
-using SyncordBot.Configs.Types;
 using SyncordBot.Models;
 using System.Diagnostics;
 

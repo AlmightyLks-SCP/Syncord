@@ -44,21 +44,6 @@ namespace SyncordBot.SyncordCommunication
             return embedBuilder.Build();
         }
 
-        private static string GetAlias(SynEventArgs evArgs)
-        {
-            string alias;
-            //If neither the public IP:Port is known in the aliases
-            //Nor the 127.0.0.1:Port variant
-            //Simply return the address. Else, the value of "alias" is set via the out parameter
-            if (!Bot.AliasConfig.Aliases.TryGetValue(evArgs.SLFullAddress, out alias) &&
-                !(evArgs.SameMachine && Bot.AliasConfig.Aliases.TryGetValue($"127.0.0.1:{evArgs.SLFullAddress.Split(':')[1]}", out alias)))
-            {
-                alias = evArgs.SLFullAddress;
-            }
-
-            return alias;
-        }
-
         public static DiscordEmbed ToEmbed(this PlayerDeath[] ev)
         {
             Translation translation = Bot.TranslationConfig.Translation;
@@ -95,10 +80,8 @@ namespace SyncordBot.SyncordCommunication
                     $"{damageType.Name}",
                     true);
 
-                if (Bot.AliasConfig.Aliases.TryGetValue(playerDeath.SLFullAddress, out string alias))
-                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {alias}");
-                else
-                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {playerDeath.SLFullAddress}");
+                string aliasOrAddress = GetAlias(playerDeath);
+                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
 
                 embedBuilder.Timestamp = playerDeath.Time;
             }
@@ -140,10 +123,8 @@ namespace SyncordBot.SyncordCommunication
                 ev.RoundSummary.TotalEscapedScientists.ToString(),
                 true);
 
-            if (Bot.AliasConfig.Aliases.TryGetValue(ev.SLFullAddress, out string alias))
-                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {alias}");
-            else
-                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {ev.SLFullAddress}");
+            string aliasOrAddress = GetAlias(ev);
+            embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
 
             embedBuilder.Timestamp = ev.Time;
 
@@ -167,16 +148,27 @@ namespace SyncordBot.SyncordCommunication
                     $"{playerBan.Duration / 60 / 60 / 24 / 365} {translation.Elements["Years"]}",
                     true);
 
-                if (Bot.AliasConfig.Aliases.TryGetValue(playerBan.SLFullAddress, out string alias))
-                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {alias}");
-                else
-                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {playerBan.SLFullAddress}");
+
+                string aliasOrAddress = GetAlias(playerBan);
+                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
 
                 embedBuilder.Timestamp = playerBan.Time;
             }
 
 
             return embedBuilder.Build();
+        }
+
+        private static string GetAlias(SynEventArgs evArgs)
+        {
+            string alias;
+
+            if (!Bot.AliasConfig.TryGetAlias(evArgs, out alias))
+            {
+                alias = evArgs.SLFullAddress;
+            }
+
+            return alias;
         }
     }
 }
