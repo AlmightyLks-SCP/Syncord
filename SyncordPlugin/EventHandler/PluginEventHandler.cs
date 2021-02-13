@@ -1,26 +1,33 @@
 ﻿using Synapse.Api.Events.SynapseEventArguments;
 using SyncordPlugin.Syncord;
-using Newtonsoft.Json;
 using System;
 using MEC;
 using SyncordInfo.EventArgs;
 using EasyCommunication.SharedTypes;
 using Synapse.Api;
-using System.Threading.Tasks;
 using SyncordInfo.SimplifiedTypes;
-using Synapse;
+using SyncordPlugin.Model;
+using SyncordInfo.ServerStats;
+using System.Collections.Generic;
+using SyncordPlugin.Helper;
 
 namespace SyncordPlugin.EventHandler
 {
     internal class PluginEventHandler
     {
         public CommunicationHandler CommunicationHandler { get; set; }
-        private int _playerDeathCount;
+        private ServerStats _serverStats;
+        private int _perRoundPlayerDeathCount;
+        private short _fps;
 
         internal PluginEventHandler()
         {
-            CommunicationHandler = new CommunicationHandler();
-            _playerDeathCount = 0;
+            _serverStats = new ServerStats();
+            CommunicationHandler = new CommunicationHandler(_serverStats);
+            _perRoundPlayerDeathCount = 0;
+            _fps = 0;
+
+            Timing.RunCoroutine(StoreFps());
 
             Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
@@ -28,10 +35,25 @@ namespace SyncordPlugin.EventHandler
             Synapse.Api.Events.EventHandler.Get.Player.PlayerDeathEvent += OnPlayerDeathEvent;
             Synapse.Api.Events.EventHandler.Get.Round.WaitingForPlayersEvent += OnWaitingForPlayersEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerBanEvent += OnPlayerBanEvent;
+            Synapse.Api.Events.EventHandler.Get.Server.UpdateEvent += Server_UpdateEvent;
+        }
+
+        private void Server_UpdateEvent()
+        {
+            _fps = (short)(1.0f / UnityEngine.Time.smoothDeltaTime);
+        }
+        private IEnumerator<float> StoreFps()
+        {
+            while (true)
+            {
+                yield return Timing.WaitForSeconds(.25f);
+                if (CommunicationHandler.EasyClient.ClientConnected)
+                    _serverStats.ServerFpsStats.Add(new FpsStat() { IsIdle = IdleMode.IdleModeActive, Fps = _fps, DateTime = DateTime.Now });
+            }
         }
 
         private void OnWaitingForPlayersEvent()
-            => _playerDeathCount = 0;
+            => _perRoundPlayerDeathCount = 0;
         private void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
         {
             var dmgType = ev.HitInfo.GetDamageType();
@@ -39,12 +61,25 @@ namespace SyncordPlugin.EventHandler
                 return;
             if (ev.Victim == null || ev.Killer == null)
                 return;
-
-            _playerDeathCount++;
+            try
+            {
+                DeathStat stat = new DeathStat()
+                {
+                    DateTime = DateTime.Now,
+                    Killer = ev.Killer.Parse(),
+                    Victim = ev.Victim.Parse()
+                };
+                _serverStats.DeathStats.Add(stat);
+            }
+            catch (Exception e)
+            {
+                Logger.Get.Error($"Failed to Parse KillStat\n{e}");
+            }
+            _perRoundPlayerDeathCount++;
             MakeAndSendData(ev);
         }
         private void OnRoundEndEvent()
-            => MakeAndSendData(ParseHelper.GetSimpleRoundSummary(_playerDeathCount));
+            => MakeAndSendData(ParseHelper.GetSimpleRoundSummary(_perRoundPlayerDeathCount));
         private void OnPlayerLeaveEvent(PlayerLeaveEventArgs ev)
             => MakeAndSendData(ev);
         private void OnPlayerJoinEvent(PlayerJoinEventArgs ev)
@@ -89,7 +124,7 @@ namespace SyncordPlugin.EventHandler
                             Timing.CallDelayed(1f, () =>
                             {
                                 //Return if parsing failed this time / Nickname is still empty
-                                if(!leave.TryParse(out PlayerJoinLeave reattemptleftArgs) || string.IsNullOrWhiteSpace(leftArgs.Player.Nickname))
+                                if (!leave.TryParse(out PlayerJoinLeave reattemptleftArgs) || string.IsNullOrWhiteSpace(leftArgs.Player.Nickname))
                                     return;
                             });
                         }

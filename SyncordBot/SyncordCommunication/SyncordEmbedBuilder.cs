@@ -1,5 +1,6 @@
 ﻿using DSharpPlus.Entities;
 using SyncordBot.Models;
+using SyncordInfo.Communication;
 using SyncordInfo.EventArgs;
 using System;
 using System.Collections.Generic;
@@ -159,7 +160,7 @@ namespace SyncordBot.SyncordCommunication
             return embedBuilder.Build();
         }
 
-        private static string GetAlias(SynEventArgs evArgs)
+        private static string GetAlias(DataBase evArgs)
         {
             string alias;
 

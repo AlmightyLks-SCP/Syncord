@@ -1,5 +1,7 @@
 ﻿using EasyCommunication.Connection;
+using EasyCommunication.SharedTypes;
 using Synapse.Command;
+using SyncordInfo.Communication;
 using SyncordPlugin.Syncord;
 using System;
 using System.Net;
@@ -12,7 +14,7 @@ namespace SyncordPlugin.Command
         Description = "Reconnect your Server with the configured Discord Bot",
         Permission = "syncord.reconnect",
         Platforms = new Platform[] { Platform.RemoteAdmin, Platform.ServerConsole },
-        Usage = "syncord connect / syncord disconnect"
+        Usage = "syncord / syncord connect / syncord disconnect / syncord ping"
         )]
     public class SyncordConnection : ISynapseCommand
     {
@@ -33,7 +35,7 @@ namespace SyncordPlugin.Command
                     result.State = CommandResultState.Error;
                     return result;
                 }
-                if (context.Arguments.Count == 0 || context.Arguments.At(0).ToLower() != "connect" && context.Arguments.At(0).ToLower() != "disconnect")
+                if (context.Arguments.Count == 0 || context.Arguments.At(0).ToLower() != "connect" && context.Arguments.At(0).ToLower() != "disconnect" && context.Arguments.At(0).ToLower() != "ping")
                 {
                     result.Message = $"Syncord Connected: {easyClient.ClientConnected}";
                     result.State = CommandResultState.Ok;
@@ -59,8 +61,8 @@ namespace SyncordPlugin.Command
                                     worked = false;       //Invalid Host
                                 }
                                 SynapseController.Server.Logger.Warn((worked && easyClient.ClientConnected).ToString());
-                                result.Message = (worked && easyClient.ClientConnected) ? 
-                                    "Connection established" : 
+                                result.Message = (worked && easyClient.ClientConnected) ?
+                                    "Connection established" :
                                     $"Connection failed. Is the entered IP & Port ({SyncordPlugin.Config.DiscordBotAddress}:{SyncordPlugin.Config.DiscordBotPort}) valid?";
                                 result.State = (worked && easyClient.ClientConnected) ? CommandResultState.Ok : CommandResultState.Error;
                             }
@@ -82,6 +84,21 @@ namespace SyncordPlugin.Command
                             else
                             {
                                 result.Message = "Client already disconnected";
+                                result.State = CommandResultState.Error;
+                            }
+                        }
+                        break;
+                    case "ping":
+                        {
+                            if (easyClient.ClientConnected)
+                            {
+                                easyClient.QueueData(new Ping() { Sent = DateTime.Now }, DataType.ProtoBuf);
+                                result.Message = "Sent ping";
+                                result.State = CommandResultState.Ok;
+                            }
+                            else
+                            {
+                                result.Message = "Not connected";
                                 result.State = CommandResultState.Error;
                             }
                         }

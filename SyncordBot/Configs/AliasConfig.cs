@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using SyncordInfo.EventArgs;
+using SyncordInfo.Communication;
 using System.Collections.Generic;
 using System.IO;
 
@@ -28,7 +28,7 @@ namespace SyncordBot.Configs
 
             return result;
         }
-        public bool TryGetAlias(SynEventArgs evArgs, out string value)
+        public bool TryGetAlias(DataBase evArgs, out string value)
         {
             bool result = false;
 

@@ -7,9 +7,13 @@ using System;
 using EasyCommunication.Events.Host.EventArgs;
 using EasyCommunication.SharedTypes;
 using SyncordInfo.EventArgs;
+using SyncordInfo.Communication;
 using System.Collections.Generic;
 using SyncordBot.Models;
 using System.Diagnostics;
+using System.ComponentModel;
+using SyncordInfo.ServerStats;
+using SyncordBot.Database;
 
 namespace SyncordBot.SyncordCommunication
 {
@@ -18,14 +22,19 @@ namespace SyncordBot.SyncordCommunication
         private Bot _bot;
         private EasyHost _easyHost;
         private List<EmbedQueue> _embedQueues;
+        private BackgroundWorker _serverStatsBW;
+        private SyncordDB _syncordDB;
         private ILogger _logger;
 
-        public CommunicationHandler(EasyHost easyHost, Bot bot, ILogger logger)
+        public CommunicationHandler(EasyHost easyHost, Bot bot, ILogger logger, SyncordDB db)
         {
             _bot = bot;
             _logger = logger;
             _easyHost = easyHost;
+            _syncordDB = db;
             _embedQueues = new List<EmbedQueue>();
+            InitBackgroundWorker();
+            _serverStatsBW.RunWorkerAsync();
 
             easyHost.EventHandler.ReceivedData += ReceivedDataFromSLServer;
             easyHost.EventHandler.ClientConnected += SLServerConnected;
@@ -34,6 +43,40 @@ namespace SyncordBot.SyncordCommunication
             _easyHost.Open();
         }
 
+        private void InitBackgroundWorker()
+        {
+            _serverStatsBW = new BackgroundWorker();
+            _serverStatsBW.DoWork += delegate (object sender, DoWorkEventArgs e)
+            {
+                if (_easyHost.ClientConnections.Count == 0)
+                    return;
+                foreach (var connection in _easyHost.ClientConnections.ToList())
+                {
+                    List<Query> queries = GetAllQueries();
+                    foreach (Query query in queries)
+                        _easyHost.QueueData(query, connection.Key, DataType.ProtoBuf);
+                }
+                var now = DateTime.Now;
+                Console.WriteLine($"Sent at {now}:{now.Millisecond}");
+                Console.WriteLine("Sent queries");
+            };
+            _serverStatsBW.RunWorkerCompleted += async delegate (object sender, RunWorkerCompletedEventArgs e)
+            {
+                //Every 5 seconds
+                await Task.Delay(5_000);
+
+                _serverStatsBW.RunWorkerAsync();
+            };
+        }
+        public List<Query> GetAllQueries()
+        {
+            return new List<Query>()
+            {
+                new Query() { QueryType = QueryType.PlayerCount },
+                new Query() { QueryType = QueryType.PlayerDeaths },
+                new Query() { QueryType = QueryType.ServerFps }
+            };
+        }
         public async Task CreateChannelEmbedQueues()
         {
             foreach (DedicatedGuild dedicatedGuild in Bot.GuildConfig.Guilds)
@@ -60,7 +103,7 @@ namespace SyncordBot.SyncordCommunication
                             continue;
                         }
 
-                        EmbedQueue embedQueueElement = _embedQueues.FirstOrDefault(_ => _.DiscordChannel.Id == dedicatedChannel.Value);
+                        EmbedQueue embedQueueElement = _embedQueues.Find(_ => _.DiscordChannel.Id == dedicatedChannel.Value);
 
                         //If no server has associated their sl ip with a this channel yet
                         if (embedQueueElement == null)
@@ -142,7 +185,7 @@ namespace SyncordBot.SyncordCommunication
                     }
                     catch (Exception e)
                     {
-                        _logger.Error($"Exception in CreateChannelEmbedQueues");
+                        _logger.Error($"Exception in CreateChannelEmbedQueues:\n{e}");
                     }
                 }
             }
@@ -154,25 +197,30 @@ namespace SyncordBot.SyncordCommunication
             {
                 case DataType.ProtoBuf:
                     {
-                        if (!ev.Data.TryDeserializeProtoBuf(out SynEventArgs synEventArgs))
+                        if (!ev.Data.TryDeserializeProtoBuf(out DataBase dataBase))
                             return;
                         //  If Bot & SL Server are on the same machine, make the identifier / key the localhost variant
                         //  Why? 
                         // - The user shall only have to enter 127.0.0.1 in the config instead of the possibly complicated public IPv4
                         // - One less headache to worry about when you have the bot and the SL Server on the same machine
                         //   while also having a dynamic ip - You don't have to re-type the IP every changing interval
-                        string ipAddress = synEventArgs.SameMachine ? $"127.0.0.1:{synEventArgs.SLFullAddress.Split(':')[1]}" : synEventArgs.SLFullAddress;
+                        string ipAddress = dataBase.SameMachine ? $"127.0.0.1:{dataBase.SLFullAddress.Split(':')[1]}" : dataBase.SLFullAddress;
 
-                        if (ev.Data.TryDeserializeProtoBuf(out PlayerJoinLeave joinLeave) && joinLeave != null)
+                        if (ev.Data.TryDeserializeProtoBuf(out Ping ping) && ping != null)
+                        {
+                            ping.Received = DateTime.Now;
+                            _easyHost.QueueData(ping, ev.Sender, DataType.ProtoBuf);
+                        }
+                        else if (ev.Data.TryDeserializeProtoBuf(out PlayerJoinLeave joinLeave) && joinLeave != null)
                         {
                             if (joinLeave.Identifier == "join")
                             {
                                 Debug.WriteLine($"{joinLeave.Player.Nickname} joined {joinLeave.SLFullAddress}!");
 
-                                var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.PlayerJoinedQueue.ContainsKey(ipAddress));
+                                var embedQueueElement = _embedQueues.Find(_ => _.PlayerJoinedQueue.ContainsKey(ipAddress));
                                 if (embedQueueElement == null)
                                 {
-                                    _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {synEventArgs.SLFullAddress}");
+                                    _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {dataBase.SLFullAddress}");
                                     return;
                                 }
                                 Queue<PlayerJoinLeave> joinQueue = embedQueueElement.PlayerJoinedQueue[ipAddress];
@@ -186,7 +234,7 @@ namespace SyncordBot.SyncordCommunication
                             else if (joinLeave.Identifier == "leave")
                             {
                                 Debug.WriteLine($"{joinLeave.Player.Nickname} left {joinLeave.SLFullAddress}!");
-                                var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.PlayerLeftQueue.ContainsKey(ipAddress));
+                                var embedQueueElement = _embedQueues.Find(_ => _.PlayerLeftQueue.ContainsKey(ipAddress));
                                 if (embedQueueElement == null)
                                 {
                                     _logger.Warning($"ReceivedDataFromSLServer: Received leave data from unconfigured SL Server");
@@ -205,10 +253,10 @@ namespace SyncordBot.SyncordCommunication
                         {
                             Debug.WriteLine($"Round ended for {roundEnd.SLFullAddress}!");
 
-                            var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.RoundEndQueue.ContainsKey(ipAddress));
+                            var embedQueueElement = _embedQueues.Find(_ => _.RoundEndQueue.ContainsKey(ipAddress));
                             if (embedQueueElement == null)
                             {
-                                _logger.Warning($"ReceivedDataFromSLServer: Received round end data from unconfigured SL Server: {synEventArgs.SLFullAddress}");
+                                _logger.Warning($"ReceivedDataFromSLServer: Received round end data from unconfigured SL Server: {dataBase.SLFullAddress}");
                                 return;
                             }
 
@@ -225,10 +273,10 @@ namespace SyncordBot.SyncordCommunication
                         {
                             Debug.WriteLine($"Player Death for {playerDeath.SLFullAddress}!");
 
-                            var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.PlayerDeathQueue.ContainsKey(ipAddress));
+                            var embedQueueElement = _embedQueues.Find(_ => _.PlayerDeathQueue.ContainsKey(ipAddress));
                             if (embedQueueElement == null)
                             {
-                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {synEventArgs.SLFullAddress}");
+                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {dataBase.SLFullAddress}");
                                 return;
                             }
 
@@ -245,10 +293,10 @@ namespace SyncordBot.SyncordCommunication
                         {
                             Debug.WriteLine($"Player Death for {playerBan.SLFullAddress}!");
 
-                            var embedQueueElement = _embedQueues.FirstOrDefault(_ => _.PlayerBanQueue.ContainsKey(ipAddress));
+                            var embedQueueElement = _embedQueues.Find(_ => _.PlayerBanQueue.ContainsKey(ipAddress));
                             if (embedQueueElement == null)
                             {
-                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {synEventArgs.SLFullAddress}");
+                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {dataBase.SLFullAddress}");
                                 return;
                             }
 
@@ -260,6 +308,42 @@ namespace SyncordBot.SyncordCommunication
                             }
 
                             banQueue.Enqueue(playerBan);
+                        }
+                        else if (ev.Data.TryDeserializeProtoBuf(out Response response) && response != null)
+                        {
+                            switch (response.Query.QueryType)
+                            {
+                                case QueryType.PlayerCount:
+                                    {
+                                        if (response.Content.TryDeserializeJson(out PlayerCountStat playerCount))
+                                        {
+                                            _bot.PresenceString = Bot.BotConfig.DiscordActivity.Name
+                                                .Replace($"{{{ipAddress}-PlayerCount}}", $"{playerCount.PlayerCount}/{playerCount.MaxPlayers}");
+                                        }
+                                        break;
+                                    }
+                                case QueryType.PlayerDeaths:
+                                    {
+                                        if (response.Content.TryDeserializeJson(out List<DeathStat> killStats))
+                                        {
+
+                                        }
+                                        break;
+                                    }
+                                case QueryType.ServerFps:
+                                    {
+                                        if (response.Content.TryDeserializeJson(out List<FpsStat> fpsStats))
+                                        {
+                                            _syncordDB.SaveFpsStats(fpsStats);
+                                            Console.WriteLine("Saved in Database");
+                                            //Console.WriteLine("----------------------");
+                                            //foreach (var fpsStat in fpsStats)
+                                            //    Console.WriteLine($"{fpsStat.DateTime} -> Average {fpsStat.FpsAmount} FPS | Idle: {fpsStat.IsIdle}");
+                                            //Console.WriteLine("----------------------");
+                                        }
+                                        break;
+                                    }
+                            }
                         }
                         break;
                     }

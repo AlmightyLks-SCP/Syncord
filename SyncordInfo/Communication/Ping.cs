@@ -1,13 +1,14 @@
 ﻿using ProtoBuf;
+using System;
 
 namespace SyncordInfo.Communication
 {
     [ProtoContract]
-    public sealed class Response : DataBase
+    public class Ping : DataBase
     {
         [ProtoMember(4)]
-        public Query Query { get; set; }
+        public DateTime Sent { get; set; }
         [ProtoMember(5)]
-        public string Content { get; set; }
+        public DateTime Received { get; set; }
     }
 }

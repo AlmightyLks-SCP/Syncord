@@ -1,17 +1,15 @@
 ﻿using DSharpPlus;
-using System.IO;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using System;
 using DSharpPlus.Entities;
 using DSharpPlus.CommandsNext;
 using Microsoft.Extensions.DependencyInjection;
-using SyncordBot.Models;
 using System.Net;
 using EasyCommunication.Connection;
 using Serilog;
 using SyncordBot.SyncordCommunication;
 using SyncordBot.Configs;
+using SyncordBot.Database;
 
 namespace SyncordBot
 {
@@ -26,6 +24,7 @@ namespace SyncordBot
         public CommandsNextExtension Commands { get; set; }
         public EasyHost EasyHost { get; set; }
         public CommunicationHandler CommunicationHandler { get; set; }
+        public string PresenceString { get; set; }
 
         private IServiceProvider _service;
         private ILogger _logger;
@@ -52,16 +51,20 @@ namespace SyncordBot
             //Load Discord Bot Configs
             LoadConfigs();
 
+            PresenceString = BotConfig.DiscordActivity.Name;
+
             _logger.Information($"Loaded Translation: {TranslationConfig.Translation.Language}.");
 
             //Instantiate EasyHost
-            EasyHost = new EasyHost(5000, BotConfig.Port, BotConfig.RemoteConnection ? IPAddress.Any : IPAddress.Loopback)
+            EasyHost = new EasyHost(2500, BotConfig.Port, BotConfig.RemoteConnection ? IPAddress.Any : IPAddress.Loopback)
             {
-                BufferSize = 2048
+                BufferSize = 16384
             };
 
+            SyncordDB db = new SyncordDB();
+
             //Instatiate CommunicationHandler
-            CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger);
+            CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger, db);
 
             //Create Discord Client
             Client = new DiscordClient(new DiscordConfiguration()
@@ -83,6 +86,7 @@ namespace SyncordBot
             _service = new ServiceCollection()
                 .AddSingleton(this)
                 .AddSingleton(EasyHost)
+                .AddSingleton(db)
                 .BuildServiceProvider();
 
             //Create Command Configs
@@ -121,7 +125,8 @@ namespace SyncordBot
                     await Client.UpdateStatusAsync(new DiscordActivity()
                     {
                         ActivityType = BotConfig.DiscordActivity.Activity,
-                        Name = BotConfig.DiscordActivity.Name.Replace("{SLCount}", EasyHost.ClientConnections.Count.ToString())
+                        Name = PresenceString
+                            .Replace("{SLCount}", EasyHost.ClientConnections.Count.ToString())
                     });
                 }
                 catch (Exception e)

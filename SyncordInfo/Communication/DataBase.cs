@@ -1,18 +1,17 @@
 ﻿using ProtoBuf;
+using SyncordInfo.EventArgs;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace SyncordInfo.EventArgs
+namespace SyncordInfo.Communication
 {
     [ProtoContract]
     [ProtoInclude(1001, typeof(PlayerJoinLeave))]
     [ProtoInclude(1002, typeof(RoundEnd))]
     [ProtoInclude(1003, typeof(PlayerDeath))]
     [ProtoInclude(1004, typeof(PlayerBan))]
-    public class SynEventArgs
+    [ProtoInclude(1005, typeof(Response))]
+    [ProtoInclude(1006, typeof(Ping))]
+    public class DataBase
     {
         [ProtoMember(1)]
         public bool SameMachine { get; set; }
