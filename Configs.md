@@ -172,6 +172,7 @@ Leave the left side of words as they are and do not remove entries. Only edit th
 
 Each SL server which you want to connect to your SyncordBot has to point towards the IP and Port.  
 If you host the bot and the SL server on the same machine, you can simply use the localhost-ip `127.0.0.1`.  
+As soon as you use localhost, it will recognize that and will furthermore identify the sl server via the localhost ip.
 `debugMode` will help you if something is going wrong and you want to know further information.  
 If you have an issue with Syncord, you'll likely be asked to activate this debug config and replicate the bug, for us to help you further.  
 `autoReconnect` is simply a quality of life feature for you, so the Syncord plugin will automatically reconnect to its Syncord Bot, if connection was lost.  
