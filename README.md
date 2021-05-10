@@ -1,5 +1,10 @@
 # Syncord
 
+[![Github All Releases](https://img.shields.io/github/downloads/AlmightyLks/Syncord/total.svg)]()
+[![Github All Releases](https://img.shields.io/github/languages/code-size/AlmightyLks/Syncord)]()
+[![Github All Releases](https://img.shields.io/tokei/lines/github/AlmightyLks/Syncord)]()
+[![Github All Releases](https://img.shields.io/github/license/AlmightyLks/Syncord)]()
+
 ## Description
 
 Syncord is there to offer you a way of logging specific Events from within your SCP SL Server to your Discord Server.  
