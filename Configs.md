@@ -5,12 +5,12 @@
 ---
 ### Overview:
 
-- [Syncord Bot](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#)
-  - [Bot-Config](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#Bot-Config)
-  - [Guild-Config](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#Guild-Config)
-  - [Alias-Config](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#Alias-Config)
-  - [Translation-Config](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#Translation-Config)
-- [Syncord Plugin](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#SyncordPlugin)
+- [Syncord Bot](Configs.md#)
+  - [Bot-Config](Configs.md#Bot-Config)
+  - [Guild-Config](Configs.md#Guild-Config)
+  - [Alias-Config](Configs.md#Alias-Config)
+  - [Translation-Config](Configs.md#Translation-Config)
+- [Syncord Plugin](Configs.md#SyncordPlugin)
 
 ---
 
