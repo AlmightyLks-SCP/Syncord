@@ -39,7 +39,10 @@ namespace SyncordBot.SyncordCommunication
                     true);
 
                 string aliasOrAddress = GetAlias(joinedArgs);
-                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
+                if (Bot.BotConfig.EmbedConfigs.DisplayServerIpOrAlias)
+                {
+                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
+                }
             }
 
             return embedBuilder.Build();
@@ -82,8 +85,10 @@ namespace SyncordBot.SyncordCommunication
                     true);
 
                 string aliasOrAddress = GetAlias(playerDeath);
-                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
-
+                if (Bot.BotConfig.EmbedConfigs.DisplayServerIpOrAlias)
+                {
+                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
+                }
                 embedBuilder.Timestamp = playerDeath.Time;
             }
 
@@ -125,8 +130,10 @@ namespace SyncordBot.SyncordCommunication
                 true);
 
             string aliasOrAddress = GetAlias(ev);
-            embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
-
+            if (Bot.BotConfig.EmbedConfigs.DisplayServerIpOrAlias)
+            {
+                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
+            }
             embedBuilder.Timestamp = ev.Time;
 
             return embedBuilder.Build();
@@ -151,8 +158,10 @@ namespace SyncordBot.SyncordCommunication
 
 
                 string aliasOrAddress = GetAlias(playerBan);
-                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
-
+                if (Bot.BotConfig.EmbedConfigs.DisplayServerIpOrAlias)
+                {
+                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
+                }
                 embedBuilder.Timestamp = playerBan.Time;
             }
 

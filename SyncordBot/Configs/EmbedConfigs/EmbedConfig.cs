@@ -4,6 +4,8 @@ namespace SyncordBot.Configs.EmbedConfigs
 {
     public class EmbedConfig
     {
+        [JsonProperty("Display Server IP / Alias")]
+        public bool DisplayServerIpOrAlias { get; init; }
         [JsonProperty("Player Joined / Left")]
         public PlayerJoinedLeftConfig PlayerJoinedLeftConfig { get; init; }
         [JsonProperty("Player Death")]
