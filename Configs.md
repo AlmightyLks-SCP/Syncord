@@ -1,68 +1,50 @@
 ## Configs
 
-### SyncordBot
+### **Each individual config will re-create itself with its default values when not existent**  
 
-The default configs for the Discord Bot looks as following:  
+---
+### Overview:
+
+- [Syncord Bot](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#)
+  - [Bot-Config](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#Bot-Config)
+  - [Guild-Config](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#Guild-Config)
+  - [Alias-Config](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#Alias-Config)
+  - [Translation-Config](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#Translation-Config)
+- [Syncord Plugin](https://github.com/AlmightyLks/Syncord/edit/development/Configs.md#SyncordPlugin)
+
+---
+
+### [Bot-Config](#Bot-Config)
+
+The default configs for this look as following:  
 
 ```json
 {
   "Prefix": "!",
-  "BotToken": "Your Bot Token here",
+  "Bot Token": "Your Bot Token here",
   "Port": 8000,
-  "DiscordActivity": {
+  "Remote Connection": false,
+  "Discord Activity": {
     "Name": "{SLCount} Server/s",
     "Activity": 3
   },
-  "Guilds": [
-  ],
-  "EmbedConfigs": {
-    "PlayerJoinedLeftConfig": {
-      "ShowUserId": true,
-      "ShowPing": true,
-      "ShowIP": false
+  "Embed Configs": {
+    "Display Server IP / Alias": false,
+    "Player Joined / Left": {
+      "Show User ID": true,
+      "Show Ping": true,
+      "Show IP (or Do Not Track)": false
     },
-    "PlayerDeathConfig": {
-      "ShowUserId": true
+    "Player Death": {
+      "Show User ID": true
     },
-    "RoundEndConfig": {
-      "ShowRoundLength": true,
-      "ShowTotalKills": true,
-      "ShowTotalScpKills": true,
-      "ShowTotalFragGrenadeKills": true,
-      "ShowTotalEscapedDClass": true,
-      "ShowTotalEscapedScientists": true
-    }
-  },
-  "TranslationConfig": {
-    "Translation": {
-      "Language": "English",
-      "Elements": {
-        "Player Join": "Player Join",
-        "Player Leave": "Player Leave",
-        "Player Ban": "Player Ban",
-        "ms": "ms",
-        "Weapon": "Weapon",
-        "Server": "Server",
-        "Banned": "Banned",
-        "Reason": "Reason",
-        "Duration": "Duration",
-        "Minutes": "Minute(s)",
-        "Hours": "Hour(s)",
-        "Days": "Day(s)",
-        "Years": "Year(s)",
-        "Player Death": "Player Death",
-        "Killer": "Killer",
-        "Victim": "Victim",
-        "Was not Cuffed": "Was not Cuffed",
-        "Was Cuffed": "Was Cuffed",
-        "Round Summary": "Round Summary",
-        "Round Length": "Round Length",
-        "Total Kills": "Total Kills",
-        "Kills By SCPs": "Kills By SCPs",
-        "Kills By Frag Grenades": "Kills By Frag Grenades",
-        "Escaped D-Class": "Escaped D-Class",
-        "Escaped Scientists": "Escaped Scientists"
-      }
+    "Round Summary": {
+      "Show Round Length": true,
+      "Show Total Kills": true,
+      "Show Total Scp Kills": true,
+      "Show Total Frag Grenade Kills": true,
+      "Show Total Escaped DClass": true,
+      "Show Total Escaped Scientists": true
     }
   }
 }
@@ -85,13 +67,30 @@ Activity  |  ID
 
 Small feature, placing `{SLCount}` into the activity name will replace it with the amount of connected SL Servers.  
 
-Regarding the `Guilds`... The way a Guild-entry is structured is as following:  
+
+The `Embed Configs` part is pretty self-explanatory and it lets allows you to customise some the logging messages to a certain extend.  
+
+---
+
+### [Guild-Config](#Guild-Config)
+
+The default configs for this look as following:  
+
+```json
+{
+  "Guilds": []
+}
+```
+
+Note: `[]` indicates a collection of something.  
+Here you can insert your entries where you link the discord guilds, the sl servers and the desired logs together.  
+The way a Guild-entry is structured is as following:  
 
 ```json
 {
     "GuildID": 0123456789012345,
-    "SLFullAddress": "127.0.0.1:8888",
-    "DedicatedChannels": {
+    "Full SL Address": "127.0.0.1:8888",
+    "Dedicated Channels": {
         "PlayerJoin": 0123456789012345,
         "PlayerLeave": 0123456789012345,
         "RoundSummary": 0123456789012345,
@@ -101,55 +100,75 @@ Regarding the `Guilds`... The way a Guild-entry is structured is as following:
 }
 ```
 
-The valid Event Names can be found [here](EventNames.md). I am always open for suggestions!
-
-Which could look something like this in completion:
+The valid event names can be found [here](EventNames.md). I am always open for suggestions!  
+So that would be for example:  
 
 ```json
-    "Guilds": [
-        {
-            "GuildID": 727996170051518504,
-            "SLFullAddress": "127.0.0.1:8888",
-            "DedicatedChannels": {
-                "PlayerJoin": 804830959513239583,
-                "PlayerLeave": 804830959513239583,
-                "RoundSummary": 805401446471827488,
-                "PlayerDeath": 805553243102904350,
-                "PlayerBan": 806028507292631040
-            }
-        },
-        {
-            "GuildID": 727610880816316536,
-            "SLFullAddress": "127.0.0.1:8888",
-            "DedicatedChannels": {
-                "PlayerDeath": 727610980237836289
-            }
-        },
-        {
-            "GuildID": 727996170051518504,
-            "SLFullAddress": "127.0.0.1:7777",
-            "DedicatedChannels": {
-                "PlayerDeath": 782245173526134814,
-                "PlayerJoin": 782687511428333598,
-                "PlayerLeave": 782687511428333598
-            }
+{
+  "Guilds": [
+    {
+      "GuildID": 121212121212,
+      "Full SL Address": "127.0.0.1:8888",
+      "Dedicated Channels": {
+          "PlayerJoin": 0123456789012345,
+          "PlayerLeave": 0123456789012345,
+          "RoundSummary": 0123456789012345,
+          "PlayerDeath": 0123456789012345,
+          "PlayerBan": 0123456789012345
         }
-    ]
+    },
+    {
+      "GuildID": 56565656565656,
+      "Full SL Address": "127.0.0.1:6726",
+      "Dedicated Channels": {
+          "PlayerJoin": 0123456789012345,
+          "PlayerLeave": 0123456789012345,
+        }
+    }
+  ]
+}
 ```
 
 That way you can combine multiple Discord-Servers with different SL-Servers, cross-logging events.  
 
-The next few config parts are the configs for the embeds which are logged.  
-Allowing you to toggle whether you want to see the UserId for when a player joins and such.  
+---
+
+### [Alias-Config](#Alias-Config)
+
+The default configs for this look as following:  
+
+```json
+{
+  "Aliases": {}
+}
+```
+
+Here you can add Aliases for your SL servers, for a friendlier representation for your server ip.  
+It is a simple dictionary, so adding some examples it could look something like this:  
+
+```json
+{
+  "Aliases": {
+    "127.0.0.1:7777" : "Wholesome's place 1",
+    "127.0.0.1:8888" : "Wholesome's place 2"
+  }
+}
+```
+
+---
+
+### [Translation-Config](#Translation-Config)
 
 Last but not least, you have a small translation config.  
 Here you can replace the default-English vocabulary, replacing it with i.e. your own native language.  
-Just a small feature, for ease of use.  
+Just a small feature, for quality of life.  
 Note:  
-Leave the left side of words as they are and do not remove entries. Only edit the right side of the translation, so:  
+Leave the left side of words as they are and do not remove entries. Only edit the right side of the translation, so as follows:  
 `"Player Join": "This side right here."`
 
-### SyncordPlugin
+---
+
+### [SyncordPlugin](#SyncordPlugin)
 
 Each SL server which you want to connect to your SyncordBot has to point towards the IP and Port.  
 If you host the bot and the SL server on the same machine, you can simply use the localhost-ip `127.0.0.1`.  
@@ -166,8 +185,8 @@ debugMode: false
 discordBotAddress: 127.0.0.1
 # Port which the Discord-Bot is listening to
 discordBotPort: 8000
-# Whether the Server should try to reconnect when connection is lost
-autoReconnect: false
+# Whether the Server should try to connect when there is no connection
+autoConnect: false
 }
 ```
 
