@@ -54,7 +54,7 @@ namespace SyncordBot.Configs
                 Directory.CreateDirectory(configDirectory);
 
             if (!File.Exists(configPath))
-                File.WriteAllText(configPath, JsonConvert.SerializeObject(result));
+                File.WriteAllText(configPath, JsonConvert.SerializeObject(result, Formatting.Indented));
             else
                 result = JsonConvert.DeserializeObject<TranslationConfig>(File.ReadAllText(configPath));
 

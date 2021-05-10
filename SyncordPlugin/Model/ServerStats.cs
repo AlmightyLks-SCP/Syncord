@@ -5,12 +5,12 @@ namespace SyncordPlugin.Model
 {
     public sealed class ServerStats
     {
-        public List<DeathStat> DeathStats { get; set; }
-        public List<FpsStat> ServerFpsStats { get; set; }
+        public LimitedSizeStack<DeathStat> DeathStats { get; private set; }
+        public LimitedSizeStack<FpsStat> ServerFpsStats { get; private set; }
         public ServerStats()
         {
-            DeathStats = new List<DeathStat>();
-            ServerFpsStats = new List<FpsStat>();
+            DeathStats = new LimitedSizeStack<DeathStat>(500);
+            ServerFpsStats = new LimitedSizeStack<FpsStat>(1000);
         }
     }
 }

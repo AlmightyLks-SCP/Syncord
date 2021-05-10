@@ -1,4 +1,5 @@
 ﻿using SyncordInfo.ServerStats;
+using SyncordPlugin.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,12 @@ namespace SyncordPlugin.Helper
         }
 
         public static IEnumerable<FpsStat> AverageFpsPerSecond(this List<FpsStat> fpsStats)
+        {
+            return fpsStats
+                .GroupBy(_ => _.DateTime.RoundToSeconds())
+                .Select(_ => new FpsStat() { DateTime = _.Key, Fps = (short)_.Average(e => e.Fps), IsIdle = _.Any(e => e.IsIdle) });
+        }
+        public static IEnumerable<FpsStat> AverageFpsPerSecond(this LimitedSizeStack<FpsStat> fpsStats)
         {
             return fpsStats
                 .GroupBy(_ => _.DateTime.RoundToSeconds())

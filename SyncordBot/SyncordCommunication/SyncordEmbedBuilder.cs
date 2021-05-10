@@ -98,28 +98,28 @@ namespace SyncordBot.SyncordCommunication
             embedBuilder.Title = translation.Elements["Round Summary"];
             embedBuilder.Color = DiscordColor.Gold;
 
-            if (Bot.BotConfig.EmbedConfigs.RoundEndConfig.ShowRoundLength)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowRoundLength)
                 embedBuilder.AddField($"{translation.Elements["Round Length"]}",
                     TimeSpan.FromSeconds(ev.RoundSummary.RoundTime).ToString(),
                     false);
-            if (Bot.BotConfig.EmbedConfigs.RoundEndConfig.ShowTotalKills)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalKills)
                 embedBuilder.AddField($"{translation.Elements["Total Kills"]}",
                 ev.RoundSummary.TotalKills.ToString(),
                 true);
-            if (Bot.BotConfig.EmbedConfigs.RoundEndConfig.ShowTotalScpKills)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalScpKills)
                 embedBuilder.AddField($"{translation.Elements["Kills By SCPs"]}",
                 ev.RoundSummary.TotalKillsByScps.ToString(),
                 true);
-            if (Bot.BotConfig.EmbedConfigs.RoundEndConfig.ShowTotalFragGrenadeKills)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalFragGrenadeKills)
                 embedBuilder.AddField($"{translation.Elements["Kills By Frag Grenades"]}",
                 ev.RoundSummary.TotalKillsByFragGrenade.ToString(),
                 true);
 
-            if (Bot.BotConfig.EmbedConfigs.RoundEndConfig.ShowTotalEscapedDClass)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalEscapedDClass)
                 embedBuilder.AddField($"{translation.Elements["Escaped D-Class"]}",
                 ev.RoundSummary.TotalEscapedDClass.ToString(),
                 true);
-            if (Bot.BotConfig.EmbedConfigs.RoundEndConfig.ShowTotalEscapedScientists)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalEscapedScientists)
                 embedBuilder.AddField($"{translation.Elements["Escaped Scientists"]}",
                 ev.RoundSummary.TotalEscapedScientists.ToString(),
                 true);

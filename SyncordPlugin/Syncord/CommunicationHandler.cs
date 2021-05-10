@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using EasyCommunication.Connection;
+using EasyCommunication;
 using EasyCommunication.Events.Client.EventArgs;
 using EasyCommunication.Helper;
 using EasyCommunication.SharedTypes;
@@ -15,6 +15,7 @@ using SyncordPlugin.Model;
 using SyncordPlugin.Helper;
 using System.Linq;
 using System.Net.Sockets;
+using EasyCommunication.Connection;
 
 namespace SyncordPlugin.Syncord
 {
@@ -50,6 +51,7 @@ namespace SyncordPlugin.Syncord
                         }
                         else if (ev.Data.TryDeserializeProtoBuf(out Query query))
                         {
+                            Logger.Get.Warn($"Received: {query.QueryType}");
                             switch (query.QueryType)
                             {
                                 case QueryType.PlayerCount:
@@ -57,8 +59,8 @@ namespace SyncordPlugin.Syncord
                                         PlayerCountStat stat = new PlayerCountStat()
                                         {
                                             DateTime = DateTime.Now,
-                                            MaxPlayers = Server.Get.Slots,
-                                            PlayerCount = Server.Get.Players.Count
+                                            MaxPlayers = (ushort)Server.Get.Slots,
+                                            PlayerCount = (ushort)Server.Get.Players.Count
                                         };
                                         Response response = new Response()
                                         {
@@ -92,7 +94,7 @@ namespace SyncordPlugin.Syncord
                                             averageFpsStats = new List<FpsStat>() { new FpsStat() { DateTime = DateTime.Now, Fps = -1, IsIdle = true } };
                                         else
                                             averageFpsStats = _serverStats.ServerFpsStats.AverageFpsPerSecond().ToList();
-                                        Logger.Get.Warn($"Received and sending fps info: {averageFpsStats.Count}");
+                                        //Logger.Get.Warn($"Received and sending fps info: {averageFpsStats.Count}");
                                         Response response = new Response()
                                         {
                                             SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",

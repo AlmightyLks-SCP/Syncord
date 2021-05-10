@@ -1,19 +1,21 @@
 ﻿using DSharpPlus;
 using System.Threading.Tasks;
 using System;
+using System.Linq;
 using DSharpPlus.Entities;
 using DSharpPlus.CommandsNext;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
-using EasyCommunication.Connection;
+using EasyCommunication;
 using Serilog;
 using SyncordBot.SyncordCommunication;
 using SyncordBot.Configs;
-using SyncordBot.Database;
+using EasyCommunication.Connection;
+using System.IO;
 
 namespace SyncordBot
 {
-    public class Bot
+    public sealed class Bot
     {
         public static BotConfig BotConfig { get; private set; }
         public static TranslationConfig TranslationConfig { get; private set; }
@@ -38,18 +40,24 @@ namespace SyncordBot
         {
             Console.Title = "Syncord";
 
-            random = new Random();
+            if (!Directory.Exists("logs"))
+            {
+                Directory.CreateDirectory("logs");
+            }
 
             //Instantiate Logger
             _logger = new LoggerConfiguration()
                 .WriteTo.Console()
-                .WriteTo.File("log.txt",
+                .WriteTo.File("logs/log.txt",
                 rollingInterval: RollingInterval.Hour,
-                rollOnFileSizeLimit: true)
+                rollOnFileSizeLimit: true,
+                retainedFileCountLimit: 24)
                 .CreateLogger();
 
             //Load Discord Bot Configs
             LoadConfigs();
+
+            random = new Random();
 
             PresenceString = BotConfig.DiscordActivity.Name;
 
@@ -61,11 +69,29 @@ namespace SyncordBot
                 BufferSize = 16384
             };
 
-            SyncordDB db = new SyncordDB();
+            await SetupDiscordClient();
+
+            //Adding Singletons of the Bot & EasyHost
+            _service = new ServiceCollection()
+                .AddSingleton(this)
+                .AddSingleton(EasyHost)
+                .BuildServiceProvider();
+
+            LoadCommands();
+
+            //Fire and forget
+            new Task(async () => await UpdatePresence()).Start();
 
             //Instatiate CommunicationHandler
-            CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger, db);
+            CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger);
 
+            await CommunicationHandler.CreateChannelEmbedQueues();
+
+            await Task.Delay(-1);
+        }
+
+        private async Task SetupDiscordClient()
+        {
             //Create Discord Client
             Client = new DiscordClient(new DiscordConfiguration()
             {
@@ -75,20 +101,12 @@ namespace SyncordBot
                 MessageCacheSize = 0
             });
 
-            Client.Ready += Client_Ready;
-
             //Connect Discord Client
             await Client.ConnectAsync();
+        }
 
-            await CommunicationHandler.CreateChannelEmbedQueues();
-
-            //Adding Singletons of the Bot & EasyHost
-            _service = new ServiceCollection()
-                .AddSingleton(this)
-                .AddSingleton(EasyHost)
-                .AddSingleton(db)
-                .BuildServiceProvider();
-
+        private void LoadCommands()
+        {
             //Create Command Configs
             var cmdCfg = new CommandsNextConfiguration
             {
@@ -105,13 +123,25 @@ namespace SyncordBot
             Commands = Client.UseCommandsNext(cmdCfg);
 
             //Register Command
-            //Commands.RegisterCommands<ServerStatsCommand>();
-
-            //Fire and forget
-            new Task(async () => await UpdatePresence()).Start();
-
-            await Task.Delay(-1);
+            //Commands.RegisterCommands<Test>();
         }
+
+        private void LoadConfigs()
+        {
+            try
+            {
+                BotConfig = BotConfig.Load();
+                GuildConfig = GuildConfig.Load();
+                TranslationConfig = TranslationConfig.Load();
+                AliasConfig = AliasConfig.Load();
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"Error loading config:\n{e}\n\nPress any key to continue");
+                Console.ReadKey();
+            }
+        }
+
         private async Task UpdatePresence()
         {
             while (true)
@@ -133,24 +163,6 @@ namespace SyncordBot
                 {
                     _logger.Error($"UpdatePresence threw:\n{e}");
                 }
-            }
-        }
-        private async Task Client_Ready(DiscordClient sender, DSharpPlus.EventArgs.ReadyEventArgs e)
-            => await sender.UpdateStatusAsync(new DiscordActivity($"0 SCP SL Servers", ActivityType.Watching), UserStatus.Online);
-
-        private void LoadConfigs()
-        {
-            try
-            {
-                BotConfig = BotConfig.Load();
-                GuildConfig = GuildConfig.Load();
-                TranslationConfig = TranslationConfig.Load();
-                AliasConfig = AliasConfig.Load();
-            }
-            catch (Exception e)
-            {
-                _logger.Error($"Error loading config:\n{e}\n\nPress any key to continue");
-                Console.ReadKey();
             }
         }
     }

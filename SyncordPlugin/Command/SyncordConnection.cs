@@ -1,4 +1,5 @@
-﻿using EasyCommunication.Connection;
+﻿using EasyCommunication;
+using EasyCommunication.Connection;
 using EasyCommunication.SharedTypes;
 using Synapse.Command;
 using SyncordInfo.Communication;

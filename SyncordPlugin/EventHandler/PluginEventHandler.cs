@@ -48,7 +48,7 @@ namespace SyncordPlugin.EventHandler
             {
                 yield return Timing.WaitForSeconds(.25f);
                 if (CommunicationHandler.EasyClient.ClientConnected)
-                    _serverStats.ServerFpsStats.Add(new FpsStat() { IsIdle = IdleMode.IdleModeActive, Fps = _fps, DateTime = DateTime.Now });
+                    _serverStats.ServerFpsStats.Push(new FpsStat() { IsIdle = IdleMode.IdleModeActive, Fps = _fps, DateTime = DateTime.Now });
             }
         }
 
@@ -69,7 +69,7 @@ namespace SyncordPlugin.EventHandler
                     Killer = ev.Killer.Parse(),
                     Victim = ev.Victim.Parse()
                 };
-                _serverStats.DeathStats.Add(stat);
+                _serverStats.DeathStats.Push(stat);
             }
             catch (Exception e)
             {

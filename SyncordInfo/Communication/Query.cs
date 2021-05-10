@@ -11,7 +11,7 @@ namespace SyncordInfo.Communication
     [ProtoContract]
     public enum QueryType
     {
-        PlayerCount,
+        PlayerCount = 1,
         PlayerDeaths,
         ServerFps
     }

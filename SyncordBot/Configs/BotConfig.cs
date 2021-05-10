@@ -11,10 +11,14 @@ namespace SyncordBot.Configs
     public sealed class BotConfig
     {
         public string Prefix { get; init; }
+        [JsonProperty("Bot Token")]
         public string BotToken { get; init; }
         public ushort Port { get; init; }
+        [JsonProperty("Remote Connection")]
         public bool RemoteConnection { get; init; }
+        [JsonProperty("Discord Activity")]
         public DiscordActivityConfig DiscordActivity { get; init; }
+        [JsonProperty("Embed Configs")]
         public EmbedConfig EmbedConfigs { get; init; }
         public BotConfig()
         {
@@ -40,7 +44,7 @@ namespace SyncordBot.Configs
                 Directory.CreateDirectory(configDirectory);
 
             if (!File.Exists(configPath))
-                File.WriteAllText(configPath, JsonConvert.SerializeObject(result));
+                File.WriteAllText(configPath, JsonConvert.SerializeObject(result, Formatting.Indented));
             else
                 result = JsonConvert.DeserializeObject<BotConfig>(File.ReadAllText(configPath));
 
