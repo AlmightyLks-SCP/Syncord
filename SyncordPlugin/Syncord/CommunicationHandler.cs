@@ -11,8 +11,6 @@ using Synapse.Api;
 using Synapse;
 using SyncordInfo.ServerStats;
 using Newtonsoft.Json;
-using SyncordPlugin.Model;
-using SyncordPlugin.Helper;
 using System.Linq;
 using System.Net.Sockets;
 using EasyCommunication.Connection;
@@ -22,10 +20,9 @@ namespace SyncordPlugin.Syncord
     public class CommunicationHandler
     {
         public EasyClient EasyClient { get; set; }
-        private ServerStats _serverStats;
-        public CommunicationHandler(ServerStats _serverStats)
+
+        public CommunicationHandler()
         {
-            this._serverStats = _serverStats;
             EasyClient = new EasyClient(2500)
             {
                 BufferSize = 16384
@@ -70,40 +67,6 @@ namespace SyncordPlugin.Syncord
                                             Query = query,
                                             Content = JsonConvert.SerializeObject(stat)
                                         };
-                                        EasyClient.QueueData(response, DataType.ProtoBuf);
-                                        break;
-                                    }
-                                case QueryType.PlayerDeaths:
-                                    {
-                                        Response response = new Response()
-                                        {
-                                            SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                                            SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
-                                            Time = DateTime.Now,
-                                            Query = query,
-                                            Content = JsonConvert.SerializeObject(_serverStats.DeathStats)
-                                        };
-                                        _serverStats.DeathStats.Clear();
-                                        EasyClient.QueueData(response, DataType.ProtoBuf);
-                                        break;
-                                    }
-                                case QueryType.ServerFps:
-                                    {
-                                        List<FpsStat> averageFpsStats;
-                                        if (_serverStats.ServerFpsStats.Count == 0)
-                                            averageFpsStats = new List<FpsStat>() { new FpsStat() { DateTime = DateTime.Now, Fps = -1, IsIdle = true } };
-                                        else
-                                            averageFpsStats = _serverStats.ServerFpsStats.AverageFpsPerSecond().ToList();
-                                        //Logger.Get.Warn($"Received and sending fps info: {averageFpsStats.Count}");
-                                        Response response = new Response()
-                                        {
-                                            SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                                            SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
-                                            Time = DateTime.Now,
-                                            Query = query,
-                                            Content = JsonConvert.SerializeObject(averageFpsStats)
-                                        };
-                                        _serverStats.ServerFpsStats.Clear();
                                         EasyClient.QueueData(response, DataType.ProtoBuf);
                                         break;
                                     }
