@@ -23,7 +23,6 @@ The default configs for this look as following:
   "Prefix": "!",
   "Bot Token": "Your Bot Token here",
   "Port": 8000,
-  "Remote Connection": false,
   "Discord Activity": {
     "Name": "{SLCount} Server/s",
     "Activity": 3
