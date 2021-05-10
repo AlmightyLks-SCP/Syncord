@@ -64,7 +64,7 @@ namespace SyncordBot
             _logger.Information($"Loaded Translation: {TranslationConfig.Translation.Language}.");
 
             //Instantiate EasyHost
-            EasyHost = new EasyHost(2500, BotConfig.Port, BotConfig.RemoteConnection ? IPAddress.Any : IPAddress.Loopback)
+            EasyHost = new EasyHost(2500, BotConfig.Port, IPAddress.Any)
             {
                 BufferSize = 16384
             };

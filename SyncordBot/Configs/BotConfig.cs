@@ -14,8 +14,6 @@ namespace SyncordBot.Configs
         [JsonProperty("Bot Token")]
         public string BotToken { get; init; }
         public ushort Port { get; init; }
-        [JsonProperty("Remote Connection")]
-        public bool RemoteConnection { get; init; }
         [JsonProperty("Discord Activity")]
         public DiscordActivityConfig DiscordActivity { get; init; }
         [JsonProperty("Embed Configs")]
@@ -25,7 +23,6 @@ namespace SyncordBot.Configs
             Prefix = "!";
             BotToken = "Your Bot Token here";
             Port = 8000;
-            RemoteConnection = false;
             DiscordActivity = new DiscordActivityConfig()
             {
                 Activity = ActivityType.Watching,
