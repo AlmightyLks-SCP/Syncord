@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
@@ -11,7 +10,6 @@
     <Company>AlmightyLks</Company>
     <RepositoryUrl>https://github.com/AlmightyLks/Syncord</RepositoryUrl>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="DSharpPlus" Version="4.0.0-rc1" />
     <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-rc1" />
@@ -22,22 +20,18 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\SyncordInfo\SyncordInfo.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="..\Syncord.png">
       <Pack>True</Pack>
-      <PackagePath></PackagePath>
+      <PackagePath />
     </None>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Include="EasyCommunication">
       <HintPath>..\Ref\EasyCommunication.dll</HintPath>
     </Reference>
   </ItemGroup>
-
 </Project>
