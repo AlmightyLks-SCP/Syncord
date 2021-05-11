@@ -59,7 +59,7 @@ You do **not** have to install an additional runtime environment, hence the bot'
 It doesn't matter where you put the Bot-Folder.  
 
 For the SL server-sided things... 
-You move the dependencies\*, which are uploaded, into your Synapse-dependencies folder.  
+You move the dependencies into your Synapse-dependencies folder.  
 After that, you simply move the `SyncordPlugin.dll` into your Server's plugin folder. Done!
 
 ---
@@ -76,6 +76,3 @@ Command Name  | Description
 `syncord disconnect` | Disconnect Syncord from the Bot.
 
 Available in  `Remote Admin Console` and the `Server Console`
-
-\* Note  
-These can be found in the dedicated Plugin-Channel within the [Synapse Discord](https://discord.gg/HWW6s8ggxT).
