@@ -12,9 +12,9 @@ namespace SyncordPlugin
         Description = "A way of connecting Discord with you SCP SL Server",
         Name = "SyncordPlugin",
         SynapseMajor = 2,
-        SynapseMinor = 5,
+        SynapseMinor = 6,
         SynapsePatch = 0,
-        Version = "0.9.1"
+        Version = "0.9.2"
         )]
     public class SyncordPlugin : AbstractPlugin
     {

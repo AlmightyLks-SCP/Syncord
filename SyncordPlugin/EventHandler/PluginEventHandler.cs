@@ -1,37 +1,31 @@
 ﻿using Synapse.Api.Events.SynapseEventArguments;
 using SyncordPlugin.Syncord;
-using Newtonsoft.Json;
 using System;
 using MEC;
 using SyncordInfo.EventArgs;
 using EasyCommunication.SharedTypes;
 using Synapse.Api;
-using System.Threading.Tasks;
 using SyncordInfo.SimplifiedTypes;
-using Synapse;
+using SyncordInfo.ServerStats;
+using System.Collections.Generic;
 
 namespace SyncordPlugin.EventHandler
 {
     internal class PluginEventHandler
     {
         public CommunicationHandler CommunicationHandler { get; set; }
-        private int _playerDeathCount;
-
+        private ushort _perRoundPlayerDeathCount;
         internal PluginEventHandler()
         {
             CommunicationHandler = new CommunicationHandler();
-            _playerDeathCount = 0;
 
             Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
             Synapse.Api.Events.EventHandler.Get.Round.RoundEndEvent += OnRoundEndEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerDeathEvent += OnPlayerDeathEvent;
-            Synapse.Api.Events.EventHandler.Get.Round.WaitingForPlayersEvent += OnWaitingForPlayersEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerBanEvent += OnPlayerBanEvent;
         }
 
-        private void OnWaitingForPlayersEvent()
-            => _playerDeathCount = 0;
         private void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
         {
             var dmgType = ev.HitInfo.GetDamageType();
@@ -40,11 +34,12 @@ namespace SyncordPlugin.EventHandler
             if (ev.Victim == null || ev.Killer == null)
                 return;
 
-            _playerDeathCount++;
+            _perRoundPlayerDeathCount++;
+
             MakeAndSendData(ev);
         }
         private void OnRoundEndEvent()
-            => MakeAndSendData(ParseHelper.GetSimpleRoundSummary(_playerDeathCount));
+            => MakeAndSendData(ParseHelper.GetSimpleRoundSummary(_perRoundPlayerDeathCount));
         private void OnPlayerLeaveEvent(PlayerLeaveEventArgs ev)
             => MakeAndSendData(ev);
         private void OnPlayerJoinEvent(PlayerJoinEventArgs ev)
@@ -89,7 +84,7 @@ namespace SyncordPlugin.EventHandler
                             Timing.CallDelayed(1f, () =>
                             {
                                 //Return if parsing failed this time / Nickname is still empty
-                                if(!leave.TryParse(out PlayerJoinLeave reattemptleftArgs) || string.IsNullOrWhiteSpace(leftArgs.Player.Nickname))
+                                if (!leave.TryParse(out PlayerJoinLeave reattemptleftArgs) || string.IsNullOrWhiteSpace(leftArgs.Player.Nickname))
                                     return;
                             });
                         }

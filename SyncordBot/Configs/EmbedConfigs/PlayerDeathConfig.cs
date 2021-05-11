@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Newtonsoft.Json;
 
 namespace SyncordBot.Configs.EmbedConfigs
 {
     public struct PlayerDeathConfig
     {
+        [JsonProperty("Show User ID")]
         public bool ShowUserId { get; set; }
     }
 }

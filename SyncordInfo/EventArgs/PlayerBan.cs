@@ -1,15 +1,11 @@
 ﻿using ProtoBuf;
+using SyncordInfo.Communication;
 using SyncordInfo.SimplifiedTypes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SyncordInfo.EventArgs
 {
     [ProtoContract]
-    public sealed class PlayerBan : SynEventArgs
+    public sealed class PlayerBan : DataBase
     {
         [ProtoMember(4)]
         public SimplePlayer BannedPlayer { get; set; }

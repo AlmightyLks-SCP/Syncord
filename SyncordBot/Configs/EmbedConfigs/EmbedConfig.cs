@@ -1,10 +1,17 @@
-﻿namespace SyncordBot.Configs.EmbedConfigs
+﻿using Newtonsoft.Json;
+
+namespace SyncordBot.Configs.EmbedConfigs
 {
     public class EmbedConfig
     {
-        public PlayerJoinedLeftConfig PlayerJoinedLeftConfig { get; set; }
-        public PlayerDeathConfig PlayerDeathConfig { get; set; }
-        public RoundEndConfig RoundEndConfig { get; set; }
+        [JsonProperty("Display Server IP / Alias")]
+        public bool DisplayServerIpOrAlias { get; init; }
+        [JsonProperty("Player Joined / Left")]
+        public PlayerJoinedLeftConfig PlayerJoinedLeftConfig { get; init; }
+        [JsonProperty("Player Death")]
+        public PlayerDeathConfig PlayerDeathConfig { get; init; }
+        [JsonProperty("Round Summary")]
+        public RoundSummaryConfig RoundSummaryConfig { get; init; }
 
         public EmbedConfig()
         {
@@ -18,7 +25,7 @@
             {
                 ShowUserId = true
             };
-            RoundEndConfig = new RoundEndConfig()
+            RoundSummaryConfig = new RoundSummaryConfig()
             {
                 ShowRoundLength = true,
                 ShowTotalKills = true,

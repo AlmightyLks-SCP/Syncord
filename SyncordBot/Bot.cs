@@ -1,28 +1,32 @@
 ﻿using DSharpPlus;
-using SyncordBot.Configs.BotConfigs;
-using System.IO;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using System;
+using System.Linq;
 using DSharpPlus.Entities;
 using DSharpPlus.CommandsNext;
 using Microsoft.Extensions.DependencyInjection;
-using SyncordBot.Models;
 using System.Net;
-using EasyCommunication.Connection;
+using EasyCommunication;
 using Serilog;
 using SyncordBot.SyncordCommunication;
+using SyncordBot.Configs;
+using EasyCommunication.Connection;
+using System.IO;
 
 namespace SyncordBot
 {
-    public class Bot
+    public sealed class Bot
     {
-        public static Config Configs { get; set; }
+        public static BotConfig BotConfig { get; private set; }
+        public static TranslationConfig TranslationConfig { get; private set; }
+        public static GuildConfig GuildConfig { get; private set; }
+        public static AliasConfig AliasConfig { get; private set; }
+
         public DiscordClient Client { get; set; }
         public CommandsNextExtension Commands { get; set; }
-        public ServerStats ServerStats { get; set; }
         public EasyHost EasyHost { get; set; }
         public CommunicationHandler CommunicationHandler { get; set; }
+        public string PresenceString { get; set; }
 
         private IServiceProvider _service;
         private ILogger _logger;
@@ -36,48 +40,36 @@ namespace SyncordBot
         {
             Console.Title = "Syncord";
 
-            random = new Random();
-
-            //Load Discord Bot Configs
-            LoadConfigs();
+            if (!Directory.Exists("logs"))
+            {
+                Directory.CreateDirectory("logs");
+            }
 
             //Instantiate Logger
             _logger = new LoggerConfiguration()
                 .WriteTo.Console()
-                .WriteTo.File("log.txt",
+                .WriteTo.File("logs/log.txt",
                 rollingInterval: RollingInterval.Hour,
-                rollOnFileSizeLimit: true)
+                rollOnFileSizeLimit: true,
+                retainedFileCountLimit: 24)
                 .CreateLogger();
 
-            _logger.Information($"Loaded Translation: {Configs.TranslationConfig.Translation.Language}.");
+            //Load Discord Bot Configs
+            LoadConfigs();
+
+            random = new Random();
+
+            PresenceString = BotConfig.DiscordActivity.Name;
+
+            _logger.Information($"Loaded Translation: {TranslationConfig.Translation.Language}.");
 
             //Instantiate EasyHost
-            EasyHost = new EasyHost(5000, Configs.Port, IPAddress.Any)
+            EasyHost = new EasyHost(2500, BotConfig.Port, IPAddress.Any)
             {
-                BufferSize = 2048
+                BufferSize = 16384
             };
 
-            //Instatiate CommunicationHandler
-            CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger);
-
-            //Instantiate ServerStats
-            ServerStats = new ServerStats();
-
-            //Create Discord Client
-            Client = new DiscordClient(new DiscordConfiguration()
-            {
-                Token = Configs.BotToken,
-                TokenType = TokenType.Bot,
-                AutoReconnect = true,
-                MessageCacheSize = 0
-            });
-
-            Client.Ready += Client_Ready;
-
-            //Connect Discord Client
-            await Client.ConnectAsync();
-
-            await CommunicationHandler.CreateChannelEmbedQueues();
+            await SetupDiscordClient();
 
             //Adding Singletons of the Bot & EasyHost
             _service = new ServiceCollection()
@@ -85,12 +77,42 @@ namespace SyncordBot
                 .AddSingleton(EasyHost)
                 .BuildServiceProvider();
 
+            LoadCommands();
+
+            //Fire and forget
+            new Task(async () => await UpdatePresence()).Start();
+
+            //Instatiate CommunicationHandler
+            CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger);
+
+            await CommunicationHandler.CreateChannelEmbedQueues();
+
+            await Task.Delay(-1);
+        }
+
+        private async Task SetupDiscordClient()
+        {
+            //Create Discord Client
+            Client = new DiscordClient(new DiscordConfiguration()
+            {
+                Token = BotConfig.BotToken,
+                TokenType = TokenType.Bot,
+                AutoReconnect = true,
+                MessageCacheSize = 0
+            });
+
+            //Connect Discord Client
+            await Client.ConnectAsync();
+        }
+
+        private void LoadCommands()
+        {
             //Create Command Configs
             var cmdCfg = new CommandsNextConfiguration
             {
                 CaseSensitive = false,
                 EnableDefaultHelp = true,
-                StringPrefixes = new[] { Configs.Prefix },
+                StringPrefixes = new[] { BotConfig.Prefix },
                 IgnoreExtraArguments = true,
                 EnableMentionPrefix = false,
                 EnableDms = true,
@@ -101,13 +123,25 @@ namespace SyncordBot
             Commands = Client.UseCommandsNext(cmdCfg);
 
             //Register Command
-            //Commands.RegisterCommands<ServerStatsCommand>();
-
-            //Fire and forget
-            new Task(async () => await UpdatePresence()).Start();
-
-            await Task.Delay(-1);
+            //Commands.RegisterCommands<Test>();
         }
+
+        private void LoadConfigs()
+        {
+            try
+            {
+                BotConfig = BotConfig.Load();
+                GuildConfig = GuildConfig.Load();
+                TranslationConfig = TranslationConfig.Load();
+                AliasConfig = AliasConfig.Load();
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"Error loading config:\n{e}\n\nPress any key to continue");
+                Console.ReadKey();
+            }
+        }
+
         private async Task UpdatePresence()
         {
             while (true)
@@ -120,8 +154,9 @@ namespace SyncordBot
                     await Task.Delay(random.Next(21000, 26500));
                     await Client.UpdateStatusAsync(new DiscordActivity()
                     {
-                        ActivityType = Configs.DiscordActivity.Activity,
-                        Name = Configs.DiscordActivity.Name.Replace("{SLCount}", EasyHost.ClientConnections.Count.ToString())
+                        ActivityType = BotConfig.DiscordActivity.Activity,
+                        Name = PresenceString
+                            .Replace("{SLCount}", EasyHost.ClientConnections.Count.ToString())
                     });
                 }
                 catch (Exception e)
@@ -129,20 +164,6 @@ namespace SyncordBot
                     _logger.Error($"UpdatePresence threw:\n{e}");
                 }
             }
-        }
-        private async Task Client_Ready(DiscordClient sender, DSharpPlus.EventArgs.ReadyEventArgs e)
-            => await sender.UpdateStatusAsync(new DiscordActivity($"0 SCP SL Servers", ActivityType.Watching), UserStatus.Online);
-
-        private void LoadConfigs()
-        {
-            Configs = new Config();
-
-            string configPath = Path.Combine(Directory.GetCurrentDirectory(), "Config.json");
-
-            if (!File.Exists(configPath))
-                File.WriteAllText(configPath, JsonConvert.SerializeObject(Configs));
-            else
-                Configs = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
         }
     }
 }

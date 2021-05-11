@@ -1,5 +1,6 @@
 ﻿using DSharpPlus.Entities;
 using SyncordBot.Models;
+using SyncordInfo.Communication;
 using SyncordInfo.EventArgs;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace SyncordBot.SyncordCommunication
     {
         public static DiscordEmbed ToEmbed(this PlayerJoinLeave[] ev)
         {
-            Translation translation = Bot.Configs.TranslationConfig.Translation;
+            Translation translation = Bot.TranslationConfig.Translation;
             var embedBuilder = new DiscordEmbedBuilder();
 
             embedBuilder.Title = ev[0].Identifier == "join" ? translation.Elements["Player Join"] : translation.Elements["Player Leave"];
@@ -23,11 +24,11 @@ namespace SyncordBot.SyncordCommunication
                 var strBuilder = new StringBuilder();
                 strBuilder.AppendLine("```");
 
-                if (Bot.Configs.EmbedConfigs.PlayerJoinedLeftConfig.ShowUserId)
+                if (Bot.BotConfig.EmbedConfigs.PlayerJoinedLeftConfig.ShowUserId)
                     strBuilder.AppendLine(joinedArgs.Player.UserId);
-                if (Bot.Configs.EmbedConfigs.PlayerJoinedLeftConfig.ShowPing)
+                if (Bot.BotConfig.EmbedConfigs.PlayerJoinedLeftConfig.ShowPing)
                     strBuilder.AppendLine($"{joinedArgs.Player.Ping} {translation.Elements["ms"]}");
-                if (Bot.Configs.EmbedConfigs.PlayerJoinedLeftConfig.ShowIP)
+                if (Bot.BotConfig.EmbedConfigs.PlayerJoinedLeftConfig.ShowIP)
                     strBuilder.AppendLine($"{(joinedArgs.Player.DoNotTrack ? "Do Not Track" : joinedArgs.Player.IPAddress)}");
 
                 strBuilder.AppendLine(joinedArgs.Time.ToLongTimeString());
@@ -37,7 +38,11 @@ namespace SyncordBot.SyncordCommunication
                     strBuilder.ToString(),
                     true);
 
-                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {joinedArgs.SLFullAddress}");
+                string aliasOrAddress = GetAlias(joinedArgs);
+                if (Bot.BotConfig.EmbedConfigs.DisplayServerIpOrAlias)
+                {
+                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
+                }
             }
 
             return embedBuilder.Build();
@@ -45,7 +50,7 @@ namespace SyncordBot.SyncordCommunication
 
         public static DiscordEmbed ToEmbed(this PlayerDeath[] ev)
         {
-            Translation translation = Bot.Configs.TranslationConfig.Translation;
+            Translation translation = Bot.TranslationConfig.Translation;
             var embedBuilder = new DiscordEmbedBuilder();
 
             embedBuilder.Title = translation.Elements["Player Death"];
@@ -57,7 +62,7 @@ namespace SyncordBot.SyncordCommunication
                 string victimRole = playerDeath.Victim.Role.Role.Name;
                 string killerRole = playerDeath.Killer.Role.Role.Name;
 
-                if (Bot.Configs.EmbedConfigs.PlayerDeathConfig.ShowUserId)
+                if (Bot.BotConfig.EmbedConfigs.PlayerDeathConfig.ShowUserId)
                 {
                     embedBuilder.AddField($"{translation.Elements["Killer"]}",
                         $"{killerRole}\n{playerDeath.Killer.DisplayName}\n{playerDeath.Killer.UserId}",
@@ -79,7 +84,11 @@ namespace SyncordBot.SyncordCommunication
                     $"{damageType.Name}",
                     true);
 
-                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {playerDeath.SLFullAddress}");
+                string aliasOrAddress = GetAlias(playerDeath);
+                if (Bot.BotConfig.EmbedConfigs.DisplayServerIpOrAlias)
+                {
+                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
+                }
                 embedBuilder.Timestamp = playerDeath.Time;
             }
 
@@ -88,39 +97,43 @@ namespace SyncordBot.SyncordCommunication
 
         public static DiscordEmbed ToEmbed(this RoundEnd ev)
         {
-            Translation translation = Bot.Configs.TranslationConfig.Translation;
+            Translation translation = Bot.TranslationConfig.Translation;
             var embedBuilder = new DiscordEmbedBuilder();
 
             embedBuilder.Title = translation.Elements["Round Summary"];
             embedBuilder.Color = DiscordColor.Gold;
 
-            if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowRoundLength)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowRoundLength)
                 embedBuilder.AddField($"{translation.Elements["Round Length"]}",
                     TimeSpan.FromSeconds(ev.RoundSummary.RoundTime).ToString(),
                     false);
-            if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalKills)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalKills)
                 embedBuilder.AddField($"{translation.Elements["Total Kills"]}",
                 ev.RoundSummary.TotalKills.ToString(),
                 true);
-            if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalScpKills)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalScpKills)
                 embedBuilder.AddField($"{translation.Elements["Kills By SCPs"]}",
                 ev.RoundSummary.TotalKillsByScps.ToString(),
                 true);
-            if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalFragGrenadeKills)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalFragGrenadeKills)
                 embedBuilder.AddField($"{translation.Elements["Kills By Frag Grenades"]}",
                 ev.RoundSummary.TotalKillsByFragGrenade.ToString(),
                 true);
 
-            if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalEscapedDClass)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalEscapedDClass)
                 embedBuilder.AddField($"{translation.Elements["Escaped D-Class"]}",
                 ev.RoundSummary.TotalEscapedDClass.ToString(),
                 true);
-            if (Bot.Configs.EmbedConfigs.RoundEndConfig.ShowTotalEscapedScientists)
+            if (Bot.BotConfig.EmbedConfigs.RoundSummaryConfig.ShowTotalEscapedScientists)
                 embedBuilder.AddField($"{translation.Elements["Escaped Scientists"]}",
                 ev.RoundSummary.TotalEscapedScientists.ToString(),
                 true);
 
-            embedBuilder.WithFooter($"{translation.Elements["Server"]}: {ev.SLFullAddress}");
+            string aliasOrAddress = GetAlias(ev);
+            if (Bot.BotConfig.EmbedConfigs.DisplayServerIpOrAlias)
+            {
+                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
+            }
             embedBuilder.Timestamp = ev.Time;
 
             return embedBuilder.Build();
@@ -128,7 +141,7 @@ namespace SyncordBot.SyncordCommunication
 
         public static DiscordEmbed ToEmbed(this PlayerBan[] ev)
         {
-            Translation translation = Bot.Configs.TranslationConfig.Translation;
+            Translation translation = Bot.TranslationConfig.Translation;
             var embedBuilder = new DiscordEmbedBuilder();
 
             embedBuilder.Title = translation.Elements["Player Ban"];
@@ -143,12 +156,29 @@ namespace SyncordBot.SyncordCommunication
                     $"{playerBan.Duration / 60 / 60 / 24 / 365} {translation.Elements["Years"]}",
                     true);
 
-                embedBuilder.WithFooter($"{translation.Elements["Server"]}: {playerBan.SLFullAddress}");
+
+                string aliasOrAddress = GetAlias(playerBan);
+                if (Bot.BotConfig.EmbedConfigs.DisplayServerIpOrAlias)
+                {
+                    embedBuilder.WithFooter($"{translation.Elements["Server"]}: {aliasOrAddress}");
+                }
                 embedBuilder.Timestamp = playerBan.Time;
             }
 
 
             return embedBuilder.Build();
+        }
+
+        private static string GetAlias(DataBase evArgs)
+        {
+            string alias;
+
+            if (!Bot.AliasConfig.TryGetAlias(evArgs, out alias))
+            {
+                alias = evArgs.SLFullAddress;
+            }
+
+            return alias;
         }
     }
 }

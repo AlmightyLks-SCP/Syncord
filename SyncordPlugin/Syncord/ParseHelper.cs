@@ -4,6 +4,7 @@ using Synapse.Api;
 using Synapse.Api.Events.SynapseEventArguments;
 using Synapse.Api.Roles;
 using Synapse.Permission;
+using SyncordInfo.Communication;
 using SyncordInfo.EventArgs;
 using SyncordInfo.SimplifiedTypes;
 using System;
@@ -14,6 +15,15 @@ namespace SyncordPlugin.Syncord
 {
     public static class ParseHelper
     {
+        public static DataBase GetDataBase()
+        {
+            return new DataBase()
+            {
+                SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
+                Time = DateTime.Now
+            };
+        }
         public static SimpleSynapseGroup Parse(this SynapseGroup group)
         {
             return new SimpleSynapseGroup()

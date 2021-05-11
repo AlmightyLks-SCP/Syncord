@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace SyncordBot.Models
 {
     public class Translation
     {
-        public string Language { get; set; }
-        public Dictionary<string, string> Elements { get; set; }
+        public string Language { get; init; }
+        public Dictionary<string, string> Elements { get; init; }
         public Translation()
         {
             Language = "Unknown";
