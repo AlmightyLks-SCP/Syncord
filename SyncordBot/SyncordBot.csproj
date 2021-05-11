@@ -3,12 +3,13 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <PackageIcon>Syncord.png</PackageIcon>
-    <Version>0.9.1</Version>
+    <Version>0.9.2</Version>
     <ApplicationIcon>Syncord.ico</ApplicationIcon>
     <PackageProjectUrl>https://github.com/AlmightyLks/Syncord</PackageProjectUrl>
     <Copyright>Copyright © AlmightyLks 2021</Copyright>
     <Company>AlmightyLks</Company>
     <RepositoryUrl>https://github.com/AlmightyLks/Syncord</RepositoryUrl>
+    <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DSharpPlus" Version="4.0.0-rc1" />
