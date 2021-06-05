@@ -1,109 +1,86 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using EasyCommunication;
-using EasyCommunication.Events.Client.EventArgs;
-using EasyCommunication.Helper;
-using EasyCommunication.SharedTypes;
 using SyncordInfo.Communication;
 using MEC;
 using Synapse.Api;
 using Synapse;
 using SyncordInfo.ServerStats;
 using Newtonsoft.Json;
+using SimpleTcp;
 using System.Linq;
-using System.Net.Sockets;
-using EasyCommunication.Connection;
+using System.Text;
+using SyncordInfo.Helper;
 
 namespace SyncordPlugin.Syncord
 {
     public class CommunicationHandler
     {
-        public EasyClient EasyClient { get; set; }
+        public SimpleTcpClient TcpCLient { get; set; }
 
-        public CommunicationHandler()
+        public CommunicationHandler(string ip, int port)
         {
-            EasyClient = new EasyClient(2500)
-            {
-                BufferSize = 16384
-            };
-            Timing.RunCoroutine(AutoReconnect());
-            EasyClient.EventHandler.ConnectedToHost += OnConnectedToHost;
-            EasyClient.EventHandler.DisconnectedFromHost += OnDisconnectedFromHost;
-            EasyClient.EventHandler.ReceivedData += OnReceivedData;
+            TcpCLient = new SimpleTcpClient(ip, port);
+            TcpCLient.Keepalive.TcpKeepAliveRetryCount = int.MaxValue;
+
+            TcpCLient.Events.Connected += OnConnectedToHost;
+            TcpCLient.Events.Disconnected += OnDisconnectedFromHost;
+            TcpCLient.Events.DataReceived += OnReceivedData;
+            TcpCLient.Connect();
+        }
+        public CommunicationHandler(string ipPort)
+        {
+            TcpCLient = new SimpleTcpClient(ipPort);
+
+            TcpCLient.Events.Connected += OnConnectedToHost;
+            TcpCLient.Events.Disconnected += OnDisconnectedFromHost;
+            TcpCLient.Events.DataReceived += OnReceivedData;
         }
 
-        private void OnReceivedData(ReceivedDataEventArgs ev)
+        private void OnReceivedData(object sender, SimpleTcp.DataReceivedEventArgs ev)
         {
-            switch (ev.Type)
-            {
-                case DataType.ProtoBuf:
-                    {
-                        if (!ev.Data.TryDeserializeProtoBuf(out DataBase DataBase))
-                            return;
+            string receivedJsonString = Encoding.UTF8.GetString(ev.Data);
 
-                        if (ev.Data.TryDeserializeProtoBuf(out Ping ping) && ping != null)
+            if (!receivedJsonString.TryDeserializeJson(out DataBase DataBase))
+                return;
+
+            if (receivedJsonString.TryDeserializeJson(out Ping ping) && ping != null)
+            {
+                Logger.Get.Info($"Ping latency: {(ping.Received - ping.Sent).Milliseconds} ms");
+            }
+            else if (receivedJsonString.TryDeserializeJson(out Query query))
+            {
+                Logger.Get.Warn($"Received: {query.QueryType}");
+                switch (query.QueryType)
+                {
+                    case QueryType.PlayerCount:
                         {
-                            Logger.Get.Info($"Ping latency: {(ping.Received - ping.Sent).Milliseconds} ms");
-                        }
-                        else if (ev.Data.TryDeserializeProtoBuf(out Query query))
-                        {
-                            Logger.Get.Warn($"Received: {query.QueryType}");
-                            switch (query.QueryType)
+                            PlayerCountStat stat = new PlayerCountStat()
                             {
-                                case QueryType.PlayerCount:
-                                    {
-                                        PlayerCountStat stat = new PlayerCountStat()
-                                        {
-                                            DateTime = DateTime.Now,
-                                            MaxPlayers = (ushort)Server.Get.Slots,
-                                            PlayerCount = (ushort)Server.Get.Players.Count
-                                        };
-                                        Response response = new Response()
-                                        {
-                                            SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                                            SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
-                                            Time = DateTime.Now,
-                                            Query = query,
-                                            Content = JsonConvert.SerializeObject(stat)
-                                        };
-                                        EasyClient.QueueData(response, DataType.ProtoBuf);
-                                        break;
-                                    }
-                            }
+                                DateTime = DateTime.Now,
+                                MaxPlayers = (ushort)Server.Get.Slots,
+                                PlayerCount = (ushort)Server.Get.Players.Count
+                            };
+                            Response response = new Response()
+                            {
+                                SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                                SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
+                                Time = DateTime.Now,
+                                Query = query,
+                                Content = JsonConvert.SerializeObject(stat)
+                            };
+                            TcpCLient.SendAsJson(response);
+                            break;
                         }
-                        break;
-                    }
-            }
-        }
-
-        private IEnumerator<float> AutoReconnect()
-        {
-            for (; ; )
-            {
-                yield return Timing.WaitForSeconds(5f);
-                try
-                {
-                    if (EasyClient.ClientConnected || !SyncordPlugin.Config.AutoConnect)
-                        continue;
-                    if (IPAddress.TryParse(SyncordPlugin.Config.DiscordBotAddress, out IPAddress botAddress))
-                        EasyClient.ConnectToHost(botAddress, SyncordPlugin.Config.DiscordBotPort);
-                    if (SyncordPlugin.Config.DebugMode && EasyClient.ClientConnected)
-                        Logger.Get.Info($"Reconnected");
-                }
-                catch (Exception e)
-                {
-                    Logger.Get.Info($"Error in AutoReconnect:\n{e}");
                 }
             }
         }
-
-        private void OnDisconnectedFromHost(DisconnectedFromHostEventArgs ev)
+        private void OnDisconnectedFromHost(object sender, SimpleTcp.ClientDisconnectedEventArgs ev)
         {
             if (SyncordPlugin.Config.DebugMode)
                 Logger.Get.Warn($"Lost connection to host.");
         }
-        private void OnConnectedToHost(ConnectedToHostEventArgs ev)
+        private void OnConnectedToHost(object sender, SimpleTcp.ClientConnectedEventArgs ev)
         {
             if (SyncordPlugin.Config.DebugMode)
                 Logger.Get.Warn("Connected to host");

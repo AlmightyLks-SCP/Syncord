@@ -6,12 +6,11 @@ using DSharpPlus.Entities;
 using DSharpPlus.CommandsNext;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
-using EasyCommunication;
 using Serilog;
 using SyncordBot.SyncordCommunication;
 using SyncordBot.Configs;
-using EasyCommunication.Connection;
 using System.IO;
+using SimpleTcp;
 
 namespace SyncordBot
 {
@@ -24,7 +23,7 @@ namespace SyncordBot
 
         public DiscordClient Client { get; set; }
         public CommandsNextExtension Commands { get; set; }
-        public EasyHost EasyHost { get; set; }
+        public SimpleTcpServer TcpServer { get; set; }
         public CommunicationHandler CommunicationHandler { get; set; }
         public string PresenceString { get; set; }
 
@@ -64,17 +63,15 @@ namespace SyncordBot
             _logger.Information($"Loaded Translation: {TranslationConfig.Translation.Language}.");
 
             //Instantiate EasyHost
-            EasyHost = new EasyHost(2500, BotConfig.Port, IPAddress.Any)
-            {
-                BufferSize = 16384
-            };
+            TcpServer = new SimpleTcpServer("0.0.0.0", BotConfig.Port);
+            TcpServer.Settings.StreamBufferSize = 16384;
 
             await SetupDiscordClient();
 
             //Adding Singletons of the Bot & EasyHost
             _service = new ServiceCollection()
                 .AddSingleton(this)
-                .AddSingleton(EasyHost)
+                .AddSingleton(TcpServer)
                 .BuildServiceProvider();
 
             LoadCommands();
@@ -83,7 +80,7 @@ namespace SyncordBot
             new Task(async () => await UpdatePresence()).Start();
 
             //Instatiate CommunicationHandler
-            CommunicationHandler = new CommunicationHandler(EasyHost, this, _logger);
+            CommunicationHandler = new CommunicationHandler(TcpServer, this, _logger);
 
             await CommunicationHandler.CreateChannelEmbedQueues();
 
@@ -156,7 +153,7 @@ namespace SyncordBot
                     {
                         ActivityType = BotConfig.DiscordActivity.Activity,
                         Name = PresenceString
-                            .Replace("{SLCount}", EasyHost.ClientConnections.Count.ToString())
+                            .Replace("{SLCount}", CommunicationHandler.ConnectedClients.ToString())
                     });
                 }
                 catch (Exception e)

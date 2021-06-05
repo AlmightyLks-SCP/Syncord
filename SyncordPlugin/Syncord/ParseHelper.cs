@@ -3,6 +3,7 @@ using Synapse;
 using Synapse.Api;
 using Synapse.Api.Events.SynapseEventArguments;
 using Synapse.Api.Roles;
+using Synapse.Config;
 using Synapse.Permission;
 using SyncordInfo.Communication;
 using SyncordInfo.EventArgs;
@@ -20,7 +21,7 @@ namespace SyncordPlugin.Syncord
             return new DataBase()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
                 Time = DateTime.Now
             };
         }
@@ -62,10 +63,10 @@ namespace SyncordPlugin.Syncord
                 Time = hitInfo.Time
             };
         }
-        public static Vector3 Parse(this SimpleVector3 simpleVector3)
+        public static Vector3 Parse(this SerializedVector3 simpleVector3)
             => new Vector3(simpleVector3.X, simpleVector3.Y, simpleVector3.Z);
-        public static SimpleVector3 Parse(this Vector3 vector)
-            => new SimpleVector3(vector.x, vector.y, vector.z);
+        public static SerializedVector3 Parse(this Vector3 vector)
+            => new SerializedVector3(vector.x, vector.y, vector.z);
 
         public static SimpleCustomRole Parse(this RoleType role, Team team)
         {
@@ -151,7 +152,7 @@ namespace SyncordPlugin.Syncord
             return new RoundEnd()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
                 RoundSummary = ev
             };
         }
@@ -159,13 +160,7 @@ namespace SyncordPlugin.Syncord
         {
             try
             {
-                roundEnd = new RoundEnd()
-                {
-                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
-                    RoundSummary = ev,
-                    Time = DateTime.Now
-                };
+                roundEnd = ev.Parse();
             }
             catch (Exception e)
             {
@@ -181,9 +176,9 @@ namespace SyncordPlugin.Syncord
             return new PlayerJoinLeave()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
                 Identifier = "join",
-                Player = ev.Player.Parse(),
+                Player = ev.Player?.Parse() ?? SimplePlayer.Unknown,
                 Time = DateTime.Now
             };
         }
@@ -191,15 +186,7 @@ namespace SyncordPlugin.Syncord
         {
             try
             {
-                joined = new PlayerJoinLeave()
-                {
-                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    //SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
-                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
-                    Identifier = "join",
-                    Player = ev.Player.Parse(),
-                    Time = DateTime.Now
-                };
+                joined = ev.Parse();
             }
             catch (Exception e)
             {
@@ -215,9 +202,9 @@ namespace SyncordPlugin.Syncord
             return new PlayerJoinLeave()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
                 Identifier = "leave",
-                Player = ev.Player.Parse(true),
+                Player = ev.Player?.Parse(true) ?? SimplePlayer.Unknown,
                 Time = DateTime.Now
             };
         }
@@ -225,14 +212,7 @@ namespace SyncordPlugin.Syncord
         {
             try
             {
-                left = new PlayerJoinLeave()
-                {
-                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
-                    Identifier = "leave",
-                    Player = ev.Player.Parse(true),
-                    Time = DateTime.Now
-                };
+                left = ev.Parse();
             }
             catch (Exception e)
             {
@@ -248,10 +228,10 @@ namespace SyncordPlugin.Syncord
             return new PlayerDeath()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
                 HitInfo = ev.HitInfo.Parse(),
-                Killer = ev.Killer.Parse(),
-                Victim = ev.Victim.Parse(),
+                Killer = ev.Killer?.Parse() ?? SimplePlayer.Unknown,
+                Victim = ev.Victim?.Parse() ?? SimplePlayer.Unknown,
                 Time = DateTime.Now
             };
         }
@@ -259,15 +239,7 @@ namespace SyncordPlugin.Syncord
         {
             try
             {
-                death = new PlayerDeath()
-                {
-                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
-                    Killer = ev.Killer.Parse(),
-                    Victim = ev.Victim.Parse(),
-                    HitInfo = ev.HitInfo.Parse(),
-                    Time = DateTime.Now
-                };
+                death = ev.Parse();
             }
             catch (Exception e)
             {
@@ -283,10 +255,10 @@ namespace SyncordPlugin.Syncord
             return new PlayerBan()
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
+                SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
                 Time = DateTime.Now,
-                BannedPlayer = ev.BannedPlayer.Parse(),
-                BanningPlayer = ev.Issuer.Parse(),
+                BannedPlayer = ev.BannedPlayer?.Parse() ?? SimplePlayer.Unknown,
+                BanningPlayer = ev.Issuer?.Parse() ?? SimplePlayer.Unknown,
                 Duration = ev.Duration,
                 Reason = ev.Reason
             };
@@ -295,16 +267,7 @@ namespace SyncordPlugin.Syncord
         {
             try
             {
-                ban = new PlayerBan()
-                {
-                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                    SLFullAddress = $"{SyncordPlugin.IPv4}:{Server.Get.Port}",
-                    Time = DateTime.Now,
-                    BannedPlayer = ev.BannedPlayer.Parse(),
-                    BanningPlayer = ev.Issuer.Parse(),
-                    Duration = ev.Duration,
-                    Reason = ev.Reason
-                };
+                ban = ev.Parse();
             }
             catch (Exception e)
             {

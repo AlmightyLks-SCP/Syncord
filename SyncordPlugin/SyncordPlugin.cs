@@ -20,14 +20,16 @@ namespace SyncordPlugin
     {
         [Synapse.Api.Plugin.Config(section = "Syncord")]
         public static SyncordConfig Config { get; set; }
-        public static string IPv4 { get; private set; }
+        public static string ServerIPv4 { get; private set; }
 
         internal PluginEventHandler EventHandler { get; set; }
 
         public override void Load()
         {
-            IPv4 = GetIPv4().Result;
-            EventHandler = new PluginEventHandler();
+            ServerIPv4 = GetIPv4()
+                .GetAwaiter()
+                .GetResult();
+            EventHandler = new PluginEventHandler(Config.DiscordBotAddress, Config.DiscordBotPort);
         }
 
         private static async Task<string> GetIPv4()

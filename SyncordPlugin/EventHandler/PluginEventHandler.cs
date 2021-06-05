@@ -3,21 +3,23 @@ using SyncordPlugin.Syncord;
 using System;
 using MEC;
 using SyncordInfo.EventArgs;
-using EasyCommunication.SharedTypes;
 using Synapse.Api;
 using SyncordInfo.SimplifiedTypes;
 using SyncordInfo.ServerStats;
 using System.Collections.Generic;
+using SyncordInfo.Helper;
 
 namespace SyncordPlugin.EventHandler
 {
     internal class PluginEventHandler
     {
         public CommunicationHandler CommunicationHandler { get; set; }
+
         private ushort _perRoundPlayerDeathCount;
-        internal PluginEventHandler()
+
+        internal PluginEventHandler(string ip, int port)
         {
-            CommunicationHandler = new CommunicationHandler();
+            CommunicationHandler = new CommunicationHandler(ip, port);
 
             Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
@@ -51,7 +53,7 @@ namespace SyncordPlugin.EventHandler
         {
             try
             {
-                if (!CommunicationHandler.EasyClient.ClientConnected)
+                if (!CommunicationHandler.TcpCLient.IsConnected)
                     return;
 
                 //Parse Player Join Event Args
@@ -61,9 +63,7 @@ namespace SyncordPlugin.EventHandler
                         return;
                     if (join.TryParse(out PlayerJoinLeave joinedArgs))
                     {
-                        var status = CommunicationHandler.EasyClient.QueueData(joinedArgs, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"PlayerJoinEventArgs QueueStatus: {status}");
+                        CommunicationHandler.TcpCLient.SendAsJson(joinedArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
@@ -88,9 +88,7 @@ namespace SyncordPlugin.EventHandler
                                     return;
                             });
                         }
-                        var status = CommunicationHandler.EasyClient.QueueData(leftArgs, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"PlayerLeaveEventArgs QueueStatus: {status}");
+                        CommunicationHandler.TcpCLient.SendAsJson(leftArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
@@ -102,9 +100,7 @@ namespace SyncordPlugin.EventHandler
                 {
                     if (simpleRoundSummary.TryParse(out RoundEnd roundEnd))
                     {
-                        var status = CommunicationHandler.EasyClient.QueueData(roundEnd, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"RoundEnd QueueStatus: {status}");
+                        CommunicationHandler.TcpCLient.SendAsJson(roundEnd);
                     }
                 }
                 //Parse Player Death Event Args
@@ -115,9 +111,7 @@ namespace SyncordPlugin.EventHandler
 
                     if (death.TryParse(out PlayerDeath deathArgs))
                     {
-                        var status = CommunicationHandler.EasyClient.QueueData(deathArgs, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"PlayerDeathEventArgs QueueStatus: {status}");
+                        CommunicationHandler.TcpCLient.SendAsJson(deathArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
@@ -129,9 +123,7 @@ namespace SyncordPlugin.EventHandler
                 {
                     if (ban.TryParse(out PlayerBan banArgs))
                     {
-                        var status = CommunicationHandler.EasyClient.QueueData(banArgs, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"PlayerBanEventArgs QueueStatus: {status}");
+                        CommunicationHandler.TcpCLient.SendAsJson(banArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {

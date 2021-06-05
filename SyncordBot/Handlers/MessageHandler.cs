@@ -3,7 +3,7 @@ using DSharpPlus.EventArgs;
 using System;
 using System.Threading.Tasks;
 
-namespace SyncordBot.EventHandlers
+namespace SyncordBot.Handlers
 {
     public class MessageHandler
     {
