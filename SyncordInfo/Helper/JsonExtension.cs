@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿extern alias NuGetUtf8Json;
+using Foo = NuGetUtf8Json.Utf8Json.JsonSerializer;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,23 +14,17 @@ namespace SyncordInfo.Helper
     {
         public static bool TryDeserializeJson<T>(this string jsonStr, out T result)
         {
-            Type type = typeof(T);
-            bool success = jsonStr.TryDeserializeJson(out object obj, type);
-            result = (T)obj;
-            return success;
-        }
-        public static bool TryDeserializeJson(this string jsonStr, out object result, Type type)
-        {
-            result = null;
+            result = default;
+            bool success = true;
             try
             {
-                result = JsonConvert.DeserializeObject(jsonStr, type, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All });
+                result = Foo.Deserialize<T>(jsonStr);
             }
-            catch
+            catch (Exception e)
             {
-                return false;
+                success = false;
             }
-            return true;
+            return success && result != null;
         }
     }
 }

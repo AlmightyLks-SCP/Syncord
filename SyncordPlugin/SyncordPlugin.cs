@@ -1,7 +1,7 @@
-﻿using Synapse.Api.Events.SynapseEventArguments;
-using Synapse.Api.Plugin;
+﻿using Synapse.Api.Plugin;
 using SyncordPlugin.Config;
 using SyncordPlugin.EventHandler;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -22,17 +22,19 @@ namespace SyncordPlugin
         public static SyncordConfig Config { get; set; }
         public static string ServerIPv4 { get; private set; }
 
-        internal PluginEventHandler EventHandler { get; set; }
+        internal PluginEventHandler EventHandler { get; private set; }
 
         public override void Load()
         {
-            ServerIPv4 = GetIPv4()
+            ServerIPv4 = FetchIPv4()
                 .GetAwaiter()
                 .GetResult();
-            EventHandler = new PluginEventHandler(Config.DiscordBotAddress, Config.DiscordBotPort);
+            if (!string.IsNullOrWhiteSpace(ServerIPv4))
+            {
+                EventHandler = new PluginEventHandler(Config.DiscordBotAddress, Config.DiscordBotPort);
+            }
         }
-
-        private static async Task<string> GetIPv4()
+        private static async Task<string> FetchIPv4()
         {
             try
             {
@@ -43,14 +45,20 @@ namespace SyncordPlugin
                     var response = client.GetAsync("https://api.ipify.org/");
                     int index = Task.WaitAny(response, waitTask);
                     if (index == 0)
+                    {
                         return await response.Result.Content.ReadAsStringAsync();
+                    }
                     else
-                        return "127.0.0.1";
+                    {
+                        Synapse.Api.Logger.Get.Error("[Syncord] Couldn't fetch the ip neccessary for communication in time");
+                        return string.Empty;
+                    }
                 }
             }
-            catch
+            catch (Exception e)
             {
-                return "127.0.0.1";
+                Synapse.Api.Logger.Get.Error($"[Syncord] Couldn't fetch the ip neccessary for communication due to an error\n{e}");
+                return string.Empty;
             }
         }
     }

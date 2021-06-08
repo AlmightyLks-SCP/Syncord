@@ -76,7 +76,7 @@ namespace SyncordBot.SyncordCommunication
 
                             switch (dedicatedChannel.Key)
                             {
-                                case EventTypes.PlayerJoin:
+                                case EventType.PlayerJoin:
                                     {
                                         embedQueue.PlayerJoinedQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
                                         {
@@ -84,7 +84,7 @@ namespace SyncordBot.SyncordCommunication
                                         };
                                     }
                                     break;
-                                case EventTypes.PlayerLeave:
+                                case EventType.PlayerLeave:
                                     {
                                         embedQueue.PlayerLeftQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
                                         {
@@ -92,7 +92,7 @@ namespace SyncordBot.SyncordCommunication
                                         };
                                     }
                                     break;
-                                case EventTypes.RoundSummary:
+                                case EventType.RoundSummary:
                                     {
                                         embedQueue.RoundEndQueue = new Dictionary<string, Queue<RoundEnd>>()
                                         {
@@ -100,7 +100,7 @@ namespace SyncordBot.SyncordCommunication
                                         };
                                     }
                                     break;
-                                case EventTypes.PlayerDeath:
+                                case EventType.PlayerDeath:
                                     {
                                         embedQueue.PlayerDeathQueue = new Dictionary<string, Queue<PlayerDeath>>()
                                         {
@@ -108,7 +108,7 @@ namespace SyncordBot.SyncordCommunication
                                         };
                                     }
                                     break;
-                                case EventTypes.PlayerBan:
+                                case EventType.PlayerBan:
                                     {
                                         embedQueue.PlayerBanQueue = new Dictionary<string, Queue<PlayerBan>>()
                                         {
@@ -125,23 +125,24 @@ namespace SyncordBot.SyncordCommunication
                         {
                             switch (dedicatedChannel.Key)
                             {
-                                case EventTypes.PlayerJoin:
+                                case EventType.PlayerJoin:
                                     embedQueueElement.PlayerJoinedQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
                                     break;
-                                case EventTypes.PlayerLeave:
+                                case EventType.PlayerLeave:
                                     embedQueueElement.PlayerLeftQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
                                     break;
-                                case EventTypes.RoundSummary:
+                                case EventType.RoundSummary:
                                     embedQueueElement.RoundEndQueue.Add(dedicatedGuild.SLFullAddress, new Queue<RoundEnd>());
                                     break;
-                                case EventTypes.PlayerDeath:
+                                case EventType.PlayerDeath:
                                     embedQueueElement.PlayerDeathQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerDeath>());
                                     break;
-                                case EventTypes.PlayerBan:
+                                case EventType.PlayerBan:
                                     embedQueueElement.PlayerBanQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerBan>());
                                     break;
                             }
                         }
+
                         _logger.Information($"{dedicatedGuild.SLFullAddress} | Associated {dedicatedChannel.Key} with channel {channel.Name} ({channel.Id})");
                     }
                     catch (Exception e)
@@ -154,9 +155,9 @@ namespace SyncordBot.SyncordCommunication
 
         private void ReceivedDataFromSLServer(object sender, SimpleTcp.DataReceivedEventArgs ev)
         {
-            string receivedJsonString = Encoding.UTF8.GetString(ev.Data);
-            //Console.WriteLine("Received: " + receivedJsonString);
-            if (!receivedJsonString.TryDeserializeJson(out DataBase dataBase))
+            string jsonStr = Encoding.UTF8.GetString(ev.Data);
+
+            if (!jsonStr.TryDeserializeJson(out DataBase dataBase))
                 return;
 
             //  If Bot & SL Server are on the same machine, make the identifier / key the localhost variant
@@ -166,108 +167,142 @@ namespace SyncordBot.SyncordCommunication
             //   while also having a dynamic ip - You don't have to re-type the IP every changing interval
             string ipAddress = dataBase.SameMachine ? $"127.0.0.1:{dataBase.SLFullAddress.Split(':')[1]}" : dataBase.SLFullAddress;
 
-            if (receivedJsonString.TryDeserializeJson(out Ping ping) && ping != null)
+            switch (dataBase.MessageType)
             {
-                ping.Received = DateTime.Now;
-                _tcpServer.SendAsJson(ev.IpPort, ping);
-            }
-            else if (receivedJsonString.TryDeserializeJson(out PlayerJoinLeave joinLeave) && joinLeave != null)
-            {
-                if (joinLeave.Identifier == "join")
-                {
-                    Console.WriteLine($"{joinLeave.Player.Nickname} joined {joinLeave.SLFullAddress}!");
-
-                    var embedQueueElement = _embedQueues.Find(_ => _.PlayerJoinedQueue.ContainsKey(ipAddress));
-                    if (embedQueueElement == null)
+                case MessageType.Event:
                     {
-                        _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {dataBase.SLFullAddress}");
-                        return;
+                        if (jsonStr.TryDeserializeJson(out PlayerJoinLeave joinLeave))
+                        {
+                            if (joinLeave.Identifier == "join")
+                            {
+                                Console.WriteLine($"{joinLeave.Player.Nickname} joined {joinLeave.SLFullAddress}!");
+
+                                var embedQueueElement = _embedQueues.Find(_ => _.PlayerJoinedQueue.ContainsKey(ipAddress));
+                                if (embedQueueElement == null)
+                                {
+                                    _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {dataBase.SLFullAddress}");
+                                    return;
+                                }
+                                Queue<PlayerJoinLeave> joinQueue = embedQueueElement.PlayerJoinedQueue[ipAddress];
+                                if (joinQueue == null)
+                                {
+                                    _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
+                                    return;
+                                }
+                                joinQueue.Enqueue(joinLeave);
+                            }
+                            else if (joinLeave.Identifier == "leave")
+                            {
+                                Debug.WriteLine($"{joinLeave.Player.Nickname} left {joinLeave.SLFullAddress}!");
+                                var embedQueueElement = _embedQueues.Find(_ => _.PlayerLeftQueue.ContainsKey(ipAddress));
+                                if (embedQueueElement == null)
+                                {
+                                    _logger.Warning($"ReceivedDataFromSLServer: Received leave data from unconfigured SL Server");
+                                    return;
+                                }
+                                Queue<PlayerJoinLeave> joinQueue = embedQueueElement.PlayerLeftQueue[ipAddress];
+                                if (joinQueue == null)
+                                {
+                                    _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
+                                    return;
+                                }
+                                joinQueue.Enqueue(joinLeave);
+                            }
+                        }
+                        else if (jsonStr.TryDeserializeJson(out RoundEnd roundEnd))
+                        {
+                            Debug.WriteLine($"Round ended for {roundEnd.SLFullAddress}!");
+
+                            var embedQueueElement = _embedQueues.Find(_ => _.RoundEndQueue.ContainsKey(ipAddress));
+                            if (embedQueueElement == null)
+                            {
+                                _logger.Warning($"ReceivedDataFromSLServer: Received round end data from unconfigured SL Server: {dataBase.SLFullAddress}");
+                                return;
+                            }
+
+                            Queue<RoundEnd> roundEndQueue = embedQueueElement.RoundEndQueue[ipAddress];
+                            if (roundEndQueue == null)
+                            {
+                                _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
+                                return;
+                            }
+
+                            roundEndQueue.Enqueue(roundEnd);
+                        }
+                        else if (jsonStr.TryDeserializeJson(out PlayerDeath playerDeath))
+                        {
+                            Debug.WriteLine($"Player Death for {playerDeath.SLFullAddress}!");
+
+                            var embedQueueElement = _embedQueues.Find(_ => _.PlayerDeathQueue.ContainsKey(ipAddress));
+                            if (embedQueueElement == null)
+                            {
+                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {dataBase.SLFullAddress}");
+                                return;
+                            }
+
+                            Queue<PlayerDeath> deathQueue = embedQueueElement.PlayerDeathQueue[ipAddress];
+                            if (deathQueue == null)
+                            {
+                                _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
+                                return;
+                            }
+
+                            deathQueue.Enqueue(playerDeath);
+                        }
+                        else if (jsonStr.TryDeserializeJson(out PlayerBan playerBan))
+                        {
+                            Debug.WriteLine($"Player Death for {playerBan.SLFullAddress}!");
+
+                            var embedQueueElement = _embedQueues.Find(_ => _.PlayerBanQueue.ContainsKey(ipAddress));
+                            if (embedQueueElement == null)
+                            {
+                                _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {dataBase.SLFullAddress}");
+                                return;
+                            }
+
+                            Queue<PlayerBan> banQueue = embedQueueElement.PlayerBanQueue[ipAddress];
+                            if (banQueue == null)
+                            {
+                                _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
+                                return;
+                            }
+
+                            banQueue.Enqueue(playerBan);
+                        }
+
+                        break;
                     }
-                    Queue<PlayerJoinLeave> joinQueue = embedQueueElement.PlayerJoinedQueue[ipAddress];
-                    if (joinQueue == null)
+                case MessageType.Query:
                     {
-                        _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
-                        return;
+                        if (jsonStr.TryDeserializeJson(out Ping ping))
+                        {
+                            ping.Received = DateTime.Now;
+                            _tcpServer.SendAsJson(ev.IpPort, ping);
+                        }
+
+                        break;
                     }
-                    joinQueue.Enqueue(joinLeave);
-                }
-                else if (joinLeave.Identifier == "leave")
-                {
-                    Debug.WriteLine($"{joinLeave.Player.Nickname} left {joinLeave.SLFullAddress}!");
-                    var embedQueueElement = _embedQueues.Find(_ => _.PlayerLeftQueue.ContainsKey(ipAddress));
-                    if (embedQueueElement == null)
+                case MessageType.Response:
                     {
-                        _logger.Warning($"ReceivedDataFromSLServer: Received leave data from unconfigured SL Server");
-                        return;
+                        if (jsonStr.TryDeserializeJson(out Response response))
+                        {
+                            switch (response.QueryType)
+                            {
+                                case QueryType.PlayerCount:
+                                    {
+
+                                        break;
+                                    }
+                                case QueryType.ServerFps:
+                                    {
+
+                                        break;
+                                    }
+                            }
+                        }
+
+                        break;
                     }
-                    Queue<PlayerJoinLeave> joinQueue = embedQueueElement.PlayerLeftQueue[ipAddress];
-                    if (joinQueue == null)
-                    {
-                        _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
-                        return;
-                    }
-                    joinQueue.Enqueue(joinLeave);
-                }
-            }
-            else if (receivedJsonString.TryDeserializeJson(out RoundEnd roundEnd) && roundEnd != null)
-            {
-                Debug.WriteLine($"Round ended for {roundEnd.SLFullAddress}!");
-
-                var embedQueueElement = _embedQueues.Find(_ => _.RoundEndQueue.ContainsKey(ipAddress));
-                if (embedQueueElement == null)
-                {
-                    _logger.Warning($"ReceivedDataFromSLServer: Received round end data from unconfigured SL Server: {dataBase.SLFullAddress}");
-                    return;
-                }
-
-                Queue<RoundEnd> roundEndQueue = embedQueueElement.RoundEndQueue[ipAddress];
-                if (roundEndQueue == null)
-                {
-                    _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
-                    return;
-                }
-
-                roundEndQueue.Enqueue(roundEnd);
-            }
-            else if (receivedJsonString.TryDeserializeJson(out PlayerDeath playerDeath) && playerDeath != null)
-            {
-                Debug.WriteLine($"Player Death for {playerDeath.SLFullAddress}!");
-
-                var embedQueueElement = _embedQueues.Find(_ => _.PlayerDeathQueue.ContainsKey(ipAddress));
-                if (embedQueueElement == null)
-                {
-                    _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {dataBase.SLFullAddress}");
-                    return;
-                }
-
-                Queue<PlayerDeath> deathQueue = embedQueueElement.PlayerDeathQueue[ipAddress];
-                if (deathQueue == null)
-                {
-                    _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
-                    return;
-                }
-
-                deathQueue.Enqueue(playerDeath);
-            }
-            else if (receivedJsonString.TryDeserializeJson(out PlayerBan playerBan) && playerBan != null)
-            {
-                Debug.WriteLine($"Player Death for {playerBan.SLFullAddress}!");
-
-                var embedQueueElement = _embedQueues.Find(_ => _.PlayerBanQueue.ContainsKey(ipAddress));
-                if (embedQueueElement == null)
-                {
-                    _logger.Warning($"ReceivedDataFromSLServer: Received join data from unconfigured SL Server: {dataBase.SLFullAddress}");
-                    return;
-                }
-
-                Queue<PlayerBan> banQueue = embedQueueElement.PlayerBanQueue[ipAddress];
-                if (banQueue == null)
-                {
-                    _logger.Warning($"ReceivedDataFromSLServer: A configured SL Server has a null-queue");
-                    return;
-                }
-
-                banQueue.Enqueue(playerBan);
             }
         }
         private void SLServerDisconnected(object sender, ClientDisconnectedEventArgs ev)

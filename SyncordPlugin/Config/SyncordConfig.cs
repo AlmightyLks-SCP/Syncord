@@ -13,5 +13,8 @@ namespace SyncordPlugin.Config
 
         [Description("Port which the Discord-Bot is listening to")]
         public int DiscordBotPort { get; set; } = 8000;
+
+        [Description("Whether the server should attempt to reconnect to the syncord bot")]
+        public bool AutoReconnect { get; internal set; }
     }
 }

@@ -13,14 +13,16 @@ namespace SyncordPlugin.EventHandler
 {
     internal class PluginEventHandler
     {
-        public CommunicationHandler CommunicationHandler { get; set; }
+        internal CommunicationHandler CommunicationHandler { get; set; }
 
+        public float ServerFps { get; private set; }
         private ushort _perRoundPlayerDeathCount;
 
         internal PluginEventHandler(string ip, int port)
         {
-            CommunicationHandler = new CommunicationHandler(ip, port);
+            CommunicationHandler = new CommunicationHandler(ip, port, this);
 
+            Synapse.Api.Events.EventHandler.Get.Server.UpdateEvent += OnServerUpdateEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
             Synapse.Api.Events.EventHandler.Get.Round.RoundEndEvent += OnRoundEndEvent;
@@ -28,6 +30,10 @@ namespace SyncordPlugin.EventHandler
             Synapse.Api.Events.EventHandler.Get.Player.PlayerBanEvent += OnPlayerBanEvent;
         }
 
+        private void OnServerUpdateEvent()
+        {
+            ServerFps = 1.0f / UnityEngine.Time.smoothDeltaTime;
+        }
         private void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
         {
             var dmgType = ev.HitInfo.GetDamageType();
@@ -53,7 +59,7 @@ namespace SyncordPlugin.EventHandler
         {
             try
             {
-                if (!CommunicationHandler.TcpCLient.IsConnected)
+                if (!CommunicationHandler.TcpClient.IsConnected)
                     return;
 
                 //Parse Player Join Event Args
@@ -63,7 +69,7 @@ namespace SyncordPlugin.EventHandler
                         return;
                     if (join.TryParse(out PlayerJoinLeave joinedArgs))
                     {
-                        CommunicationHandler.TcpCLient.SendAsJson(joinedArgs);
+                        CommunicationHandler.TcpClient.SendAsJson(joinedArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
@@ -88,7 +94,7 @@ namespace SyncordPlugin.EventHandler
                                     return;
                             });
                         }
-                        CommunicationHandler.TcpCLient.SendAsJson(leftArgs);
+                        CommunicationHandler.TcpClient.SendAsJson(leftArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
@@ -100,7 +106,7 @@ namespace SyncordPlugin.EventHandler
                 {
                     if (simpleRoundSummary.TryParse(out RoundEnd roundEnd))
                     {
-                        CommunicationHandler.TcpCLient.SendAsJson(roundEnd);
+                        CommunicationHandler.TcpClient.SendAsJson(roundEnd);
                     }
                 }
                 //Parse Player Death Event Args
@@ -111,7 +117,7 @@ namespace SyncordPlugin.EventHandler
 
                     if (death.TryParse(out PlayerDeath deathArgs))
                     {
-                        CommunicationHandler.TcpCLient.SendAsJson(deathArgs);
+                        CommunicationHandler.TcpClient.SendAsJson(deathArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
@@ -123,7 +129,7 @@ namespace SyncordPlugin.EventHandler
                 {
                     if (ban.TryParse(out PlayerBan banArgs))
                     {
-                        CommunicationHandler.TcpCLient.SendAsJson(banArgs);
+                        CommunicationHandler.TcpClient.SendAsJson(banArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {

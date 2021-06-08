@@ -1,6 +1,6 @@
 ﻿namespace SyncordBot.Models
 {
-    public enum EventTypes
+    public enum EventType
     {
         PlayerJoin,
         PlayerLeave,

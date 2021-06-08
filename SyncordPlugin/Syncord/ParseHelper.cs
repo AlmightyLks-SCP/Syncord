@@ -153,6 +153,8 @@ namespace SyncordPlugin.Syncord
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
                 SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
+                Time = DateTime.Now,
+                MessageType = MessageType.Event,
                 RoundSummary = ev
             };
         }
@@ -177,9 +179,10 @@ namespace SyncordPlugin.Syncord
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
                 SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
+                Time = DateTime.Now,
+                MessageType = MessageType.Event,
                 Identifier = "join",
-                Player = ev.Player?.Parse() ?? SimplePlayer.Unknown,
-                Time = DateTime.Now
+                Player = ev.Player?.Parse() ?? SimplePlayer.Unknown
             };
         }
         public static bool TryParse(this PlayerJoinEventArgs ev, out PlayerJoinLeave joined)
@@ -203,9 +206,10 @@ namespace SyncordPlugin.Syncord
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
                 SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
+                Time = DateTime.Now,
+                MessageType = MessageType.Event,
                 Identifier = "leave",
-                Player = ev.Player?.Parse(true) ?? SimplePlayer.Unknown,
-                Time = DateTime.Now
+                Player = ev.Player?.Parse(true) ?? SimplePlayer.Unknown
             };
         }
         public static bool TryParse(this PlayerLeaveEventArgs ev, out PlayerJoinLeave left)
@@ -229,10 +233,11 @@ namespace SyncordPlugin.Syncord
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
                 SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
+                Time = DateTime.Now,
+                MessageType = MessageType.Event,
                 HitInfo = ev.HitInfo.Parse(),
                 Killer = ev.Killer?.Parse() ?? SimplePlayer.Unknown,
-                Victim = ev.Victim?.Parse() ?? SimplePlayer.Unknown,
-                Time = DateTime.Now
+                Victim = ev.Victim?.Parse() ?? SimplePlayer.Unknown
             };
         }
         public static bool TryParse(this PlayerDeathEventArgs ev, out PlayerDeath death)
@@ -256,6 +261,7 @@ namespace SyncordPlugin.Syncord
             {
                 SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
                 SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
+                MessageType = MessageType.Event,
                 Time = DateTime.Now,
                 BannedPlayer = ev.BannedPlayer?.Parse() ?? SimplePlayer.Unknown,
                 BanningPlayer = ev.Issuer?.Parse() ?? SimplePlayer.Unknown,
