@@ -6,10 +6,10 @@ using SyncordInfo.ServerStats;
 using SimpleTcp;
 using System.Text;
 using SyncordInfo.Helper;
-using Newtonsoft.Json;
 using SyncordPlugin.EventHandler;
 using System.ComponentModel;
 using System.Threading.Tasks;
+using Utf8Json;
 
 namespace SyncordPlugin.Syncord
 {
@@ -19,18 +19,29 @@ namespace SyncordPlugin.Syncord
 
         private PluginEventHandler _pluginEventHandler;
         private BackgroundWorker _reconnectWorker;
+        private string _ipPortEndpoint;
 
-        internal CommunicationHandler(string ip, int port, PluginEventHandler pluginEventHandler)
+        internal CommunicationHandler(string ipPort, PluginEventHandler pluginEventHandler)
         {
-            TcpClient = new SimpleTcpClient(ip, port);
-            TcpClient.Keepalive.TcpKeepAliveRetryCount = int.MaxValue;
+            _ipPortEndpoint = ipPort;
+            TcpClient = new SimpleTcpClient(_ipPortEndpoint);
+            TcpClient.Keepalive.TcpKeepAliveRetryCount = 5;
             TcpClient.Keepalive.EnableTcpKeepAlives = true;
             _pluginEventHandler = pluginEventHandler;
 
             TcpClient.Events.Connected += OnConnectedToHost;
             TcpClient.Events.Disconnected += OnDisconnectedFromHost;
             TcpClient.Events.DataReceived += OnReceivedData;
-            TcpClient.Connect();
+
+            try
+            {
+                TcpClient.Connect();
+            }
+            catch (Exception e)
+            {
+                Synapse.Api.Logger.Get.Error($"Failed to first connect to Syncord Bot ({_ipPortEndpoint}){Environment.NewLine}{e}");
+                return;
+            }
 
             if (SyncordPlugin.Config.AutoReconnect)
             {
@@ -52,6 +63,10 @@ namespace SyncordPlugin.Syncord
             {
                 return;
             }
+            if (SyncordPlugin.Config.DebugMode)
+                Synapse.Api.Logger.Get.Info("");
+
+            ResetClient();
 
             try
             {
@@ -65,59 +80,66 @@ namespace SyncordPlugin.Syncord
         }
         private void OnReceivedData(object sender, SimpleTcp.DataReceivedEventArgs ev)
         {
-            string receivedJsonString = Encoding.UTF8.GetString(ev.Data);
-
-            if (!receivedJsonString.TryDeserializeJson(out DataBase dataBase))
-                return;
-
-            if (receivedJsonString.TryDeserializeJson(out Ping ping) && ping != null)
+            try
             {
-                Logger.Get.Info($"Ping latency: {(ping.Received - ping.Sent).Milliseconds} ms");
-            }
-            else if (receivedJsonString.TryDeserializeJson(out Query query))
-            {
-                Logger.Get.Warn($"Received: {query.QueryType}");
-                switch (query.QueryType)
+                string receivedJsonString = Encoding.UTF8.GetString(ev.Data);
+
+                if (!receivedJsonString.TryDeserializeJson(out DataBase dataBase))
+                    return;
+
+                if (receivedJsonString.TryDeserializeJson(out Ping ping) && ping != null)
                 {
-                    case QueryType.PlayerCount:
-                        {
-                            PlayerCountStat stat = new PlayerCountStat()
-                            {
-                                DateTime = DateTime.Now,
-                                MaxPlayers = (ushort)Server.Get.Slots,
-                                PlayerCount = (ushort)Server.Get.Players.Count
-                            };
-                            Response response = new Response()
-                            {
-                                SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                                SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
-                                Time = DateTime.Now,
-                                QueryType = query.QueryType,
-                                JsonContent = JsonConvert.SerializeObject(stat)
-                            };
-                            TcpClient.SendAsJson(response);
-                            break;
-                        }
-                    case QueryType.ServerFps:
-                        {
-                            FpsStat fpsStat = new FpsStat()
-                            {
-                                DateTime = DateTime.Now,
-                                Fps = _pluginEventHandler.ServerFps,
-                                IsIdle = IdleMode.IdleModeActive
-                            };
-                            Response response = new Response()
-                            {
-                                SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
-                                SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
-                                Time = DateTime.Now,
-                                QueryType = query.QueryType,
-                                JsonContent = JsonConvert.SerializeObject(fpsStat)
-                            };
-                            TcpClient.SendAsJson(response);
-                            break;
-                        }
+                    Logger.Get.Info($"Ping latency: {(ping.Received - ping.Sent).Milliseconds} ms");
                 }
+                else if (receivedJsonString.TryDeserializeJson(out Query query))
+                {
+                    Logger.Get.Warn($"Received: {query.QueryType}");
+                    switch (query.QueryType)
+                    {
+                        case QueryType.PlayerCount:
+                            {
+                                PlayerCountStat stat = new PlayerCountStat()
+                                {
+                                    DateTime = DateTime.Now,
+                                    MaxPlayers = (ushort)Server.Get.Slots,
+                                    PlayerCount = (ushort)Server.Get.Players.Count
+                                };
+                                Response response = new Response()
+                                {
+                                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                                    SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
+                                    Time = DateTime.Now,
+                                    QueryType = query.QueryType,
+                                    JsonContent = stat.Serialize()
+                                };
+                                TcpClient.SendAsJson(response);
+                                break;
+                            }
+                        case QueryType.ServerFps:
+                            {
+                                FpsStat fpsStat = new FpsStat()
+                                {
+                                    DateTime = DateTime.Now,
+                                    Fps = _pluginEventHandler.ServerFps,
+                                    IsIdle = IdleMode.IdleModeActive
+                                };
+                                Response response = new Response()
+                                {
+                                    SameMachine = SyncordPlugin.Config.DiscordBotAddress == "127.0.0.1",
+                                    SLFullAddress = $"{SyncordPlugin.ServerIPv4}:{Server.Get.Port}",
+                                    Time = DateTime.Now,
+                                    QueryType = query.QueryType,
+                                    JsonContent = fpsStat.Serialize()
+                                };
+                                TcpClient.SendAsJson(response);
+                                break;
+                            }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Synapse.Api.Logger.Get.Error($"{nameof(CommunicationHandler.OnReceivedData)} threw: {Environment.NewLine}{e}");
             }
         }
         private void OnDisconnectedFromHost(object sender, SimpleTcp.ClientDisconnectedEventArgs ev)
@@ -129,6 +151,12 @@ namespace SyncordPlugin.Syncord
         {
             if (SyncordPlugin.Config.DebugMode)
                 Logger.Get.Warn("Connected to host");
+        }
+
+        public void ResetClient()
+        {
+            TcpClient.Dispose();
+            TcpClient = new SimpleTcpClient(_ipPortEndpoint);
         }
     }
 }

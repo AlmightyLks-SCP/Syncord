@@ -1,4 +1,5 @@
 ﻿using Synapse.Api.Plugin;
+using SyncordInfo.Helper;
 using SyncordPlugin.Config;
 using SyncordPlugin.EventHandler;
 using System;
@@ -9,12 +10,12 @@ namespace SyncordPlugin
 {
     [PluginInformation(
         Author = "AlmightyLks",
-        Description = "A way of connecting Discord with you SCP SL Server",
+        Description = "A way of connecting Discord with your SCP SL Server",
         Name = "SyncordPlugin",
         SynapseMajor = 2,
         SynapseMinor = 6,
         SynapsePatch = 0,
-        Version = "0.9.2"
+        Version = "0.9.3"
         )]
     public class SyncordPlugin : AbstractPlugin
     {
@@ -26,12 +27,19 @@ namespace SyncordPlugin
 
         public override void Load()
         {
+            if (Config.DebugMode)
+                Synapse.Api.Logger.Get.Info(Config.Serialize());
+
             ServerIPv4 = FetchIPv4()
                 .GetAwaiter()
                 .GetResult();
+
+            if (Config.DebugMode)
+                Synapse.Api.Logger.Get.Info($"Fetched {ServerIPv4}");
+
             if (!string.IsNullOrWhiteSpace(ServerIPv4))
             {
-                EventHandler = new PluginEventHandler(Config.DiscordBotAddress, Config.DiscordBotPort);
+                EventHandler = new PluginEventHandler($"{Config.DiscordBotAddress}:{Config.DiscordBotPort}");
             }
         }
         private static async Task<string> FetchIPv4()

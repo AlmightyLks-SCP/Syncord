@@ -12,6 +12,7 @@ using System.ComponentModel;
 using SyncordInfo.ServerStats;
 using SimpleTcp;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace SyncordBot.SyncordCommunication
 {
@@ -166,6 +167,9 @@ namespace SyncordBot.SyncordCommunication
             // - One less headache to worry about when you have the bot and the SL Server on the same machine
             //   while also having a dynamic ip - You don't have to re-type the IP every changing interval
             string ipAddress = dataBase.SameMachine ? $"127.0.0.1:{dataBase.SLFullAddress.Split(':')[1]}" : dataBase.SLFullAddress;
+
+            if (Bot.BotConfig.DebugMode)
+                Console.WriteLine($"Received the following (From same machine? {dataBase.SameMachine} | {dataBase.SLFullAddress}): >>{jsonStr}<<{Environment.NewLine}----------------------");
 
             switch (dataBase.MessageType)
             {

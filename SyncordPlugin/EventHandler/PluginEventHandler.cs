@@ -5,8 +5,6 @@ using MEC;
 using SyncordInfo.EventArgs;
 using Synapse.Api;
 using SyncordInfo.SimplifiedTypes;
-using SyncordInfo.ServerStats;
-using System.Collections.Generic;
 using SyncordInfo.Helper;
 
 namespace SyncordPlugin.EventHandler
@@ -18,9 +16,9 @@ namespace SyncordPlugin.EventHandler
         public float ServerFps { get; private set; }
         private ushort _perRoundPlayerDeathCount;
 
-        internal PluginEventHandler(string ip, int port)
+        internal PluginEventHandler(string ipPort)
         {
-            CommunicationHandler = new CommunicationHandler(ip, port, this);
+            CommunicationHandler = new CommunicationHandler(ipPort, this);
 
             Synapse.Api.Events.EventHandler.Get.Server.UpdateEvent += OnServerUpdateEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
@@ -57,18 +55,24 @@ namespace SyncordPlugin.EventHandler
 
         private void MakeAndSendData(object ev)
         {
+            Synapse.Api.Logger.Get.Info("1");
             try
             {
+                Synapse.Api.Logger.Get.Info("2");
                 if (!CommunicationHandler.TcpClient.IsConnected)
                     return;
+                Synapse.Api.Logger.Get.Info("3");
 
                 //Parse Player Join Event Args
                 if (ev is PlayerJoinEventArgs join)
                 {
+                    Synapse.Api.Logger.Get.Info("4");
                     if (join.Player.Hub.isLocalPlayer)
                         return;
+                    Synapse.Api.Logger.Get.Info("5");
                     if (join.TryParse(out PlayerJoinLeave joinedArgs))
                     {
+                        Synapse.Api.Logger.Get.Info("6");
                         CommunicationHandler.TcpClient.SendAsJson(joinedArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)

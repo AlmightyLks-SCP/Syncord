@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30717.126
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncordPlugin", "SyncordPlugin\SyncordPlugin.csproj", "{FAF21D58-EAE2-4C02-905E-EFFB8104479A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncordPlugin", "SyncordPlugin\SyncordPlugin.csproj", "{FAF21D58-EAE2-4C02-905E-EFFB8104479A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncordBot", "SyncordBot\SyncordBot.csproj", "{94B024F6-7B7E-41F3-9A13-615C596D155F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncordInfo", "SyncordInfo\SyncordInfo.csproj", "{5C5F343B-715B-446B-8C4E-D6FD34EB41EB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncordInfo", "SyncordInfo\SyncordInfo.csproj", "{5C5F343B-715B-446B-8C4E-D6FD34EB41EB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

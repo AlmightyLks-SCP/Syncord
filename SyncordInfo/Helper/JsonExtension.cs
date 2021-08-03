@@ -1,24 +1,23 @@
-﻿extern alias NuGetUtf8Json;
-using Foo = NuGetUtf8Json.Utf8Json.JsonSerializer;
-
+﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SyncordInfo.Helper
 {
 
     public static class JsonExtension
     {
+        public static string Serialize<T>(this T obj)
+            => JsonConvert.SerializeObject(obj);
+        public static T Deserialize<T>(this string jsonStr)
+            => JsonConvert.DeserializeObject<T>(jsonStr);
+
         public static bool TryDeserializeJson<T>(this string jsonStr, out T result)
         {
             result = default;
             bool success = true;
             try
             {
-                result = Foo.Deserialize<T>(jsonStr);
+                result = Deserialize<T>(jsonStr);
             }
             catch (Exception e)
             {
