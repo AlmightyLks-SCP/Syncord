@@ -6,6 +6,6 @@ namespace SyncordInfo.ServerStats
     {
         public bool IsIdle { get; set; }
         public DateTime DateTime { get; set; }
-        public short Fps { get; set; }
+        public float Fps { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using DSharpPlus.Entities;
 using Serilog;
 using SyncordBot.Helper;
+using SyncordBot.Models;
 using SyncordBot.SyncordCommunication;
 using SyncordInfo.EventArgs;
 using System;

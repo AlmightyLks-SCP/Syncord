@@ -1,7 +1,8 @@
-﻿using Synapse.Api.Events.SynapseEventArguments;
-using Synapse.Api.Plugin;
+﻿using Synapse.Api.Plugin;
+using SyncordInfo.Helper;
 using SyncordPlugin.Config;
 using SyncordPlugin.EventHandler;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -9,28 +10,39 @@ namespace SyncordPlugin
 {
     [PluginInformation(
         Author = "AlmightyLks",
-        Description = "A way of connecting Discord with you SCP SL Server",
+        Description = "A way of connecting Discord with your SCP SL Server",
         Name = "SyncordPlugin",
         SynapseMajor = 2,
         SynapseMinor = 6,
         SynapsePatch = 0,
-        Version = "0.9.2"
+        Version = "0.9.3"
         )]
     public class SyncordPlugin : AbstractPlugin
     {
         [Synapse.Api.Plugin.Config(section = "Syncord")]
         public static SyncordConfig Config { get; set; }
-        public static string IPv4 { get; private set; }
+        public static string ServerIPv4 { get; private set; }
 
-        internal PluginEventHandler EventHandler { get; set; }
+        internal PluginEventHandler EventHandler { get; private set; }
 
         public override void Load()
         {
-            IPv4 = GetIPv4().Result;
-            EventHandler = new PluginEventHandler();
-        }
+            if (Config.DebugMode)
+                Synapse.Api.Logger.Get.Info(Config.Serialize());
 
-        private static async Task<string> GetIPv4()
+            ServerIPv4 = FetchIPv4()
+                .GetAwaiter()
+                .GetResult();
+
+            if (Config.DebugMode)
+                Synapse.Api.Logger.Get.Info($"Fetched {ServerIPv4}");
+
+            if (!string.IsNullOrWhiteSpace(ServerIPv4))
+            {
+                EventHandler = new PluginEventHandler($"{Config.DiscordBotAddress}:{Config.DiscordBotPort}");
+            }
+        }
+        private static async Task<string> FetchIPv4()
         {
             try
             {
@@ -41,14 +53,20 @@ namespace SyncordPlugin
                     var response = client.GetAsync("https://api.ipify.org/");
                     int index = Task.WaitAny(response, waitTask);
                     if (index == 0)
+                    {
                         return await response.Result.Content.ReadAsStringAsync();
+                    }
                     else
-                        return "127.0.0.1";
+                    {
+                        Synapse.Api.Logger.Get.Error("[Syncord] Couldn't fetch the ip neccessary for communication in time");
+                        return string.Empty;
+                    }
                 }
             }
-            catch
+            catch (Exception e)
             {
-                return "127.0.0.1";
+                Synapse.Api.Logger.Get.Error($"[Syncord] Couldn't fetch the ip neccessary for communication due to an error\n{e}");
+                return string.Empty;
             }
         }
     }

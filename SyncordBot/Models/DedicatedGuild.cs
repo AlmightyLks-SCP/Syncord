@@ -9,6 +9,6 @@ namespace SyncordBot.Models
         [JsonProperty("Full SL Address")]
         public string SLFullAddress { get; set; } = "";
         [JsonProperty("Dedicated Channels")]
-        public Dictionary<EventTypes, ulong> DedicatedChannels { get; set; } = new Dictionary<EventTypes, ulong>();
+        public Dictionary<EventType, ulong> DedicatedChannels { get; set; } = new Dictionary<EventType, ulong>();
     }
 }

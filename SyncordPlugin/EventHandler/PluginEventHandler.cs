@@ -3,22 +3,24 @@ using SyncordPlugin.Syncord;
 using System;
 using MEC;
 using SyncordInfo.EventArgs;
-using EasyCommunication.SharedTypes;
 using Synapse.Api;
 using SyncordInfo.SimplifiedTypes;
-using SyncordInfo.ServerStats;
-using System.Collections.Generic;
+using SyncordInfo.Helper;
 
 namespace SyncordPlugin.EventHandler
 {
     internal class PluginEventHandler
     {
-        public CommunicationHandler CommunicationHandler { get; set; }
-        private ushort _perRoundPlayerDeathCount;
-        internal PluginEventHandler()
-        {
-            CommunicationHandler = new CommunicationHandler();
+        internal CommunicationHandler CommunicationHandler { get; set; }
 
+        public float ServerFps { get; private set; }
+        private ushort _perRoundPlayerDeathCount;
+
+        internal PluginEventHandler(string ipPort)
+        {
+            CommunicationHandler = new CommunicationHandler(ipPort, this);
+
+            Synapse.Api.Events.EventHandler.Get.Server.UpdateEvent += OnServerUpdateEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerJoinEvent += OnPlayerJoinEvent;
             Synapse.Api.Events.EventHandler.Get.Player.PlayerLeaveEvent += OnPlayerLeaveEvent;
             Synapse.Api.Events.EventHandler.Get.Round.RoundEndEvent += OnRoundEndEvent;
@@ -26,6 +28,10 @@ namespace SyncordPlugin.EventHandler
             Synapse.Api.Events.EventHandler.Get.Player.PlayerBanEvent += OnPlayerBanEvent;
         }
 
+        private void OnServerUpdateEvent()
+        {
+            ServerFps = 1.0f / UnityEngine.Time.smoothDeltaTime;
+        }
         private void OnPlayerDeathEvent(PlayerDeathEventArgs ev)
         {
             var dmgType = ev.HitInfo.GetDamageType();
@@ -49,21 +55,25 @@ namespace SyncordPlugin.EventHandler
 
         private void MakeAndSendData(object ev)
         {
+            Synapse.Api.Logger.Get.Info("1");
             try
             {
-                if (!CommunicationHandler.EasyClient.ClientConnected)
+                Synapse.Api.Logger.Get.Info("2");
+                if (!CommunicationHandler.TcpClient.IsConnected)
                     return;
+                Synapse.Api.Logger.Get.Info("3");
 
                 //Parse Player Join Event Args
                 if (ev is PlayerJoinEventArgs join)
                 {
+                    Synapse.Api.Logger.Get.Info("4");
                     if (join.Player.Hub.isLocalPlayer)
                         return;
+                    Synapse.Api.Logger.Get.Info("5");
                     if (join.TryParse(out PlayerJoinLeave joinedArgs))
                     {
-                        var status = CommunicationHandler.EasyClient.QueueData(joinedArgs, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"PlayerJoinEventArgs QueueStatus: {status}");
+                        Synapse.Api.Logger.Get.Info("6");
+                        CommunicationHandler.TcpClient.SendAsJson(joinedArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
@@ -88,9 +98,7 @@ namespace SyncordPlugin.EventHandler
                                     return;
                             });
                         }
-                        var status = CommunicationHandler.EasyClient.QueueData(leftArgs, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"PlayerLeaveEventArgs QueueStatus: {status}");
+                        CommunicationHandler.TcpClient.SendAsJson(leftArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
@@ -102,9 +110,7 @@ namespace SyncordPlugin.EventHandler
                 {
                     if (simpleRoundSummary.TryParse(out RoundEnd roundEnd))
                     {
-                        var status = CommunicationHandler.EasyClient.QueueData(roundEnd, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"RoundEnd QueueStatus: {status}");
+                        CommunicationHandler.TcpClient.SendAsJson(roundEnd);
                     }
                 }
                 //Parse Player Death Event Args
@@ -115,9 +121,7 @@ namespace SyncordPlugin.EventHandler
 
                     if (death.TryParse(out PlayerDeath deathArgs))
                     {
-                        var status = CommunicationHandler.EasyClient.QueueData(deathArgs, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"PlayerDeathEventArgs QueueStatus: {status}");
+                        CommunicationHandler.TcpClient.SendAsJson(deathArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {
@@ -129,9 +133,7 @@ namespace SyncordPlugin.EventHandler
                 {
                     if (ban.TryParse(out PlayerBan banArgs))
                     {
-                        var status = CommunicationHandler.EasyClient.QueueData(banArgs, DataType.ProtoBuf);
-                        if (SyncordPlugin.Config.DebugMode && status != QueueStatus.Queued)
-                            Logger.Get.Warn($"PlayerBanEventArgs QueueStatus: {status}");
+                        CommunicationHandler.TcpClient.SendAsJson(banArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
                     {

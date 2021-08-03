@@ -1,11 +1,8 @@
-﻿using EasyCommunication;
-using EasyCommunication.Helper;
-using Serilog;
+﻿using Serilog;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
-using EasyCommunication.Events.Host.EventArgs;
-using EasyCommunication.SharedTypes;
+using SyncordInfo.Helper;
 using SyncordInfo.EventArgs;
 using SyncordInfo.Communication;
 using System.Collections.Generic;
@@ -13,30 +10,33 @@ using SyncordBot.Models;
 using System.Diagnostics;
 using System.ComponentModel;
 using SyncordInfo.ServerStats;
-using EasyCommunication.Connection;
+using SimpleTcp;
+using System.Text;
+using Newtonsoft.Json;
 
 namespace SyncordBot.SyncordCommunication
 {
     public sealed class CommunicationHandler
     {
+        public short ConnectedClients { get; private set; }
+
         private Bot _bot;
-        private EasyHost _easyHost;
+        private SimpleTcpServer _tcpServer;
         private List<EmbedQueue> _embedQueues;
         private ILogger _logger;
 
-        public CommunicationHandler(EasyHost easyHost, Bot bot, ILogger logger)
+        public CommunicationHandler(SimpleTcpServer tcpServer, Bot bot, ILogger logger)
         {
             _bot = bot;
             _logger = logger;
-            _easyHost = easyHost;
+            _tcpServer = tcpServer;
             _embedQueues = new List<EmbedQueue>();
 
+            _tcpServer.Events.DataReceived += ReceivedDataFromSLServer;
+            _tcpServer.Events.ClientConnected += SLServerConnected;
+            _tcpServer.Events.ClientDisconnected += SLServerDisconnected;
 
-            easyHost.EventHandler.ReceivedData += ReceivedDataFromSLServer;
-            easyHost.EventHandler.ClientConnected += SLServerConnected;
-            easyHost.EventHandler.ClientDisconnected += SLServerDisconnected;
-
-            _easyHost.Open();
+            _tcpServer.Start();
         }
 
         public async Task CreateChannelEmbedQueues()
@@ -77,7 +77,7 @@ namespace SyncordBot.SyncordCommunication
 
                             switch (dedicatedChannel.Key)
                             {
-                                case EventTypes.PlayerJoin:
+                                case EventType.PlayerJoin:
                                     {
                                         embedQueue.PlayerJoinedQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
                                         {
@@ -85,7 +85,7 @@ namespace SyncordBot.SyncordCommunication
                                         };
                                     }
                                     break;
-                                case EventTypes.PlayerLeave:
+                                case EventType.PlayerLeave:
                                     {
                                         embedQueue.PlayerLeftQueue = new Dictionary<string, Queue<PlayerJoinLeave>>()
                                         {
@@ -93,7 +93,7 @@ namespace SyncordBot.SyncordCommunication
                                         };
                                     }
                                     break;
-                                case EventTypes.RoundSummary:
+                                case EventType.RoundSummary:
                                     {
                                         embedQueue.RoundEndQueue = new Dictionary<string, Queue<RoundEnd>>()
                                         {
@@ -101,7 +101,7 @@ namespace SyncordBot.SyncordCommunication
                                         };
                                     }
                                     break;
-                                case EventTypes.PlayerDeath:
+                                case EventType.PlayerDeath:
                                     {
                                         embedQueue.PlayerDeathQueue = new Dictionary<string, Queue<PlayerDeath>>()
                                         {
@@ -109,7 +109,7 @@ namespace SyncordBot.SyncordCommunication
                                         };
                                     }
                                     break;
-                                case EventTypes.PlayerBan:
+                                case EventType.PlayerBan:
                                     {
                                         embedQueue.PlayerBanQueue = new Dictionary<string, Queue<PlayerBan>>()
                                         {
@@ -126,23 +126,24 @@ namespace SyncordBot.SyncordCommunication
                         {
                             switch (dedicatedChannel.Key)
                             {
-                                case EventTypes.PlayerJoin:
+                                case EventType.PlayerJoin:
                                     embedQueueElement.PlayerJoinedQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
                                     break;
-                                case EventTypes.PlayerLeave:
+                                case EventType.PlayerLeave:
                                     embedQueueElement.PlayerLeftQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerJoinLeave>());
                                     break;
-                                case EventTypes.RoundSummary:
+                                case EventType.RoundSummary:
                                     embedQueueElement.RoundEndQueue.Add(dedicatedGuild.SLFullAddress, new Queue<RoundEnd>());
                                     break;
-                                case EventTypes.PlayerDeath:
+                                case EventType.PlayerDeath:
                                     embedQueueElement.PlayerDeathQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerDeath>());
                                     break;
-                                case EventTypes.PlayerBan:
+                                case EventType.PlayerBan:
                                     embedQueueElement.PlayerBanQueue.Add(dedicatedGuild.SLFullAddress, new Queue<PlayerBan>());
                                     break;
                             }
                         }
+
                         _logger.Information($"{dedicatedGuild.SLFullAddress} | Associated {dedicatedChannel.Key} with channel {channel.Name} ({channel.Id})");
                     }
                     catch (Exception e)
@@ -153,32 +154,32 @@ namespace SyncordBot.SyncordCommunication
             }
         }
 
-        private void ReceivedDataFromSLServer(ReceivedDataEventArgs ev)
+        private void ReceivedDataFromSLServer(object sender, SimpleTcp.DataReceivedEventArgs ev)
         {
-            switch (ev.Type)
+            string jsonStr = Encoding.UTF8.GetString(ev.Data);
+
+            if (!jsonStr.TryDeserializeJson(out DataBase dataBase))
+                return;
+
+            //  If Bot & SL Server are on the same machine, make the identifier / key the localhost variant
+            //  Why? 
+            // - The user shall only have to enter 127.0.0.1 in the config instead of the possibly complicated public IPv4
+            // - One less headache to worry about when you have the bot and the SL Server on the same machine
+            //   while also having a dynamic ip - You don't have to re-type the IP every changing interval
+            string ipAddress = dataBase.SameMachine ? $"127.0.0.1:{dataBase.SLFullAddress.Split(':')[1]}" : dataBase.SLFullAddress;
+
+            if (Bot.BotConfig.DebugMode)
+                Console.WriteLine($"Received the following (From same machine? {dataBase.SameMachine} | {dataBase.SLFullAddress}): >>{jsonStr}<<{Environment.NewLine}----------------------");
+
+            switch (dataBase.MessageType)
             {
-                case DataType.ProtoBuf:
+                case MessageType.Event:
                     {
-                        if (!ev.Data.TryDeserializeProtoBuf(out DataBase dataBase))
-                            return;
-
-                        //  If Bot & SL Server are on the same machine, make the identifier / key the localhost variant
-                        //  Why? 
-                        // - The user shall only have to enter 127.0.0.1 in the config instead of the possibly complicated public IPv4
-                        // - One less headache to worry about when you have the bot and the SL Server on the same machine
-                        //   while also having a dynamic ip - You don't have to re-type the IP every changing interval
-                        string ipAddress = dataBase.SameMachine ? $"127.0.0.1:{dataBase.SLFullAddress.Split(':')[1]}" : dataBase.SLFullAddress;
-
-                        if (ev.Data.TryDeserializeProtoBuf(out Ping ping) && ping != null)
-                        {
-                            ping.Received = DateTime.Now;
-                            _easyHost.QueueData(ping, ev.Sender, DataType.ProtoBuf);
-                        }
-                        else if (ev.Data.TryDeserializeProtoBuf(out PlayerJoinLeave joinLeave) && joinLeave != null)
+                        if (jsonStr.TryDeserializeJson(out PlayerJoinLeave joinLeave))
                         {
                             if (joinLeave.Identifier == "join")
                             {
-                                Debug.WriteLine($"{joinLeave.Player.Nickname} joined {joinLeave.SLFullAddress}!");
+                                Console.WriteLine($"{joinLeave.Player.Nickname} joined {joinLeave.SLFullAddress}!");
 
                                 var embedQueueElement = _embedQueues.Find(_ => _.PlayerJoinedQueue.ContainsKey(ipAddress));
                                 if (embedQueueElement == null)
@@ -212,7 +213,7 @@ namespace SyncordBot.SyncordCommunication
                                 joinQueue.Enqueue(joinLeave);
                             }
                         }
-                        else if (ev.Data.TryDeserializeProtoBuf(out RoundEnd roundEnd) && roundEnd != null)
+                        else if (jsonStr.TryDeserializeJson(out RoundEnd roundEnd))
                         {
                             Debug.WriteLine($"Round ended for {roundEnd.SLFullAddress}!");
 
@@ -232,7 +233,7 @@ namespace SyncordBot.SyncordCommunication
 
                             roundEndQueue.Enqueue(roundEnd);
                         }
-                        else if (ev.Data.TryDeserializeProtoBuf(out PlayerDeath playerDeath) && playerDeath != null)
+                        else if (jsonStr.TryDeserializeJson(out PlayerDeath playerDeath))
                         {
                             Debug.WriteLine($"Player Death for {playerDeath.SLFullAddress}!");
 
@@ -252,7 +253,7 @@ namespace SyncordBot.SyncordCommunication
 
                             deathQueue.Enqueue(playerDeath);
                         }
-                        else if (ev.Data.TryDeserializeProtoBuf(out PlayerBan playerBan) && playerBan != null)
+                        else if (jsonStr.TryDeserializeJson(out PlayerBan playerBan))
                         {
                             Debug.WriteLine($"Player Death for {playerBan.SLFullAddress}!");
 
@@ -272,19 +273,50 @@ namespace SyncordBot.SyncordCommunication
 
                             banQueue.Enqueue(playerBan);
                         }
+
+                        break;
                     }
-                    break;
-                default:
-                    break;
+                case MessageType.Query:
+                    {
+                        if (jsonStr.TryDeserializeJson(out Ping ping))
+                        {
+                            ping.Received = DateTime.Now;
+                            _tcpServer.SendAsJson(ev.IpPort, ping);
+                        }
+
+                        break;
+                    }
+                case MessageType.Response:
+                    {
+                        if (jsonStr.TryDeserializeJson(out Response response))
+                        {
+                            switch (response.QueryType)
+                            {
+                                case QueryType.PlayerCount:
+                                    {
+
+                                        break;
+                                    }
+                                case QueryType.ServerFps:
+                                    {
+
+                                        break;
+                                    }
+                            }
+                        }
+
+                        break;
+                    }
             }
         }
-
-        private void SLServerDisconnected(ClientDisconnectedEventArgs ev)
+        private void SLServerDisconnected(object sender, ClientDisconnectedEventArgs ev)
         {
+            ConnectedClients--;
             _logger.Warning("A client disconnected");
         }
-        private void SLServerConnected(ClientConnectedEventArgs ev)
+        private void SLServerConnected(object sender, ClientConnectedEventArgs ev)
         {
+            ConnectedClients++;
             _logger.Information("A client connected");
         }
     }
