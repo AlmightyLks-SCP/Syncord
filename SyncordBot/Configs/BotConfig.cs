@@ -18,7 +18,7 @@ namespace SyncordBot.Configs
         public DiscordActivityConfig DiscordActivity { get; init; }
         [JsonProperty("Embed Configs")]
         public EmbedConfig EmbedConfigs { get; init; }
-        public bool DebugMode { get; internal set; }
+        public bool DebugMode { get; set; }
 
         public BotConfig()
         {

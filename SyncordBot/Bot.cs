@@ -40,7 +40,6 @@ namespace SyncordBot
         {
             Console.Title = "Syncord";
 
-
             Console.WriteLine($"Syncord Plugin Version >>{Assembly.GetExecutingAssembly().GetName().Version}<<");
 
             if (!Directory.Exists("logs"))
