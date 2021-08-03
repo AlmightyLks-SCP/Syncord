@@ -55,24 +55,18 @@ namespace SyncordPlugin.EventHandler
 
         private void MakeAndSendData(object ev)
         {
-            Synapse.Api.Logger.Get.Info("1");
             try
             {
-                Synapse.Api.Logger.Get.Info("2");
                 if (!CommunicationHandler.TcpClient.IsConnected)
                     return;
-                Synapse.Api.Logger.Get.Info("3");
 
                 //Parse Player Join Event Args
                 if (ev is PlayerJoinEventArgs join)
                 {
-                    Synapse.Api.Logger.Get.Info("4");
                     if (join.Player.Hub.isLocalPlayer)
                         return;
-                    Synapse.Api.Logger.Get.Info("5");
                     if (join.TryParse(out PlayerJoinLeave joinedArgs))
                     {
-                        Synapse.Api.Logger.Get.Info("6");
                         CommunicationHandler.TcpClient.SendAsJson(joinedArgs);
                     }
                     else if (SyncordPlugin.Config.DebugMode)
