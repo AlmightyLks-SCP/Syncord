@@ -11,6 +11,7 @@ using SyncordBot.SyncordCommunication;
 using SyncordBot.Configs;
 using System.IO;
 using SimpleTcp;
+using System.Reflection;
 
 namespace SyncordBot
 {
@@ -38,6 +39,9 @@ namespace SyncordBot
         private async Task MainAsync()
         {
             Console.Title = "Syncord";
+
+
+            Console.WriteLine($"Syncord Plugin Version >>{Assembly.GetExecutingAssembly().GetName().Version}<<");
 
             if (!Directory.Exists("logs"))
             {

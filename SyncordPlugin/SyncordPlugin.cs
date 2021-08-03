@@ -4,6 +4,7 @@ using SyncordPlugin.Config;
 using SyncordPlugin.EventHandler;
 using System;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace SyncordPlugin
@@ -27,6 +28,8 @@ namespace SyncordPlugin
 
         public override void Load()
         {
+            Synapse.Api.Logger.Get.Info($"Syncord Plugin Version >>{Assembly.GetExecutingAssembly().GetName().Version}<<");
+
             if (Config.DebugMode)
                 Synapse.Api.Logger.Get.Info(Config.Serialize());
 
