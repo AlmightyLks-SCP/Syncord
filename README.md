@@ -1,3 +1,8 @@
+# OUTDATED
+This Plugin was intended for Synapse 2, and is not made, nor compatible with Synapse3.
+
+---
+
 # Syncord
 
 [![Github All Releases](https://img.shields.io/github/downloads/AlmightyLks/Syncord/total.svg)]()
